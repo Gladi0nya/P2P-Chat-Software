@@ -1,0 +1,12 @@
+Utiliser des sockets Unix pour un module qui soit compatible avec Linux et MacOS (plus généralement basés sur Unix)
+    Documentation : Cours_5_Sockets.pdf envoyé par Tom
+
+
+Et utiliser WinSocks pour un module Windows
+    Documentation : site de développeur de Microsoft (MSDN)
+
+
+
+
+Choix entre TCP et UDP :
+    Choisir TCP -> conseil de Tom
