@@ -5,5 +5,5 @@
 .dir-locals.el
 TAGS
 .git-credentials
-
+DEBUG.log
 build/

@@ -4,6 +4,8 @@ LDFLAGS=
 OBJ=build/client.o build/logger.o
 EXEC=build/client
 
+.PHONY: all clean run mkdir
+
 all: $(EXECUTABLE) clean mkdir
 
 mkdir:
@@ -19,10 +21,13 @@ build/logger.o:
 $(EXEC): mkdir $(OBJ)
 	$(CC) $(OBJ) -o $(EXEC) $(LDFLAGS)
 
+filelog:
+	$(MAKE) CFLAGS="$(CFLAGS)-DLOGFILE=\\\"DEBUG.log\\\"" build
+
 build: $(EXEC)
 	rm -f build/*.o
 
-run: build
+run: 
 	./$(EXEC)
 
 clean:
