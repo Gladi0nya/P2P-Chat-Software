@@ -23,7 +23,7 @@ static FILE* OUT = NULL;
 /** ----------------------------------------------------------- *
   *  startLogger                                                *
   *                                                             *
-  *  Initialize logger module.                                  *
+  *  Initialize the logger module.                              *
   *                                                             *
   *  @retval 0 Successfully initialized.                        *
   *  @retval 1 Failed to initialized.                           *
@@ -45,6 +45,15 @@ uint8_t startLogger(void)
   return clock_gettime(CLOCK_MONOTONIC, &start_time) == -1;
 }
 
+/** ----------------------------------------------------------- *
+  *  stoptLogger                                                *
+  *                                                             *
+  *  Stop the logger module.                                    *
+  *                                                             *
+  *  @retval 0 Successfully stopped.                            *
+  *  @retval 1 Failed to stop.                                  *
+  * ----------------------------------------------------------- **/
+
 uint8_t stopLogger(void)
 {
   if (!isInit)
@@ -59,6 +68,15 @@ uint8_t stopLogger(void)
   return 0;
 }
 
+/** ----------------------------------------------------------- *
+  *  getRunTime                                                 *
+  *                                                             *
+  *  Retrieve the elapsed time since the logger was initialized.*
+  *                                                             *
+  *  @retval 0 Successfully initialized.                        *
+  *  @retval 1 Failed to initialized.                           *
+  * ----------------------------------------------------------- **/
+
 static inline long double getRunTime(void)
 {
   struct timespec current;
@@ -70,6 +88,19 @@ static inline long double getRunTime(void)
 
   return elapsed;
 }
+
+/** ----------------------------------------------------------- *
+  *  logMsg                                                     *
+  *                                                             *
+  *  Display message in the logs.                               *
+  *                                                             *
+  *  @param code    Log level                                   *
+  *  @param modname Module name                                 *
+  *  @param msg     Message to be displayed                     * 
+  *                                                             *
+  *  @retval 0 Successfully initialized.                        *
+  *  @retval 1 Failed to initialized.                           *
+  * ----------------------------------------------------------- **/
 
 uint8_t logMsg(const uint8_t code, const char* modname, const char* msg)
 {
@@ -93,9 +124,9 @@ uint8_t logMsg(const uint8_t code, const char* modname, const char* msg)
     return 1;
 
   #ifdef LOGFILE
-  fprintf(OUT, "[%Lf] [%s] x%s %s\n", getRunTime(), modname, LEVEL[code], msg);
+  fprintf(OUT, "%Lf %s %s %s\n", getRunTime(), modname, LEVEL[code], msg);
   #else
-  fprintf(OUT, "%Lf %s %s%s\e[0m %s\n", getRunTime(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
+  fprintf(OUT, "%Lf | %s | %s%s\e[0m - %s\n", getRunTime(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
   #endif
 
   return 0;

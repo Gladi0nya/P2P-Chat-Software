@@ -14,6 +14,15 @@
 
 #define MODULE_NAME "BOOTSTRAP"
 
+/** ----------------------------------------------------------- *
+  *  main                                                       *
+  *                                                             *
+  *  Entry point of the bootstrap module.                       *
+  *                                                             *
+  *  @retval 0 Successfully initialized.                        *
+  *  @retval 1 Failed to initialized.                           *
+  * ----------------------------------------------------------- **/
+
 int main(void)
 {
   if (startLogger())
