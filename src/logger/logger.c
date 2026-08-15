@@ -68,9 +68,23 @@ uint8_t logMsg(const uint8_t code, const char* modname, const char* msg) {
     "DEBUG"
   };
 
+  #ifndef LOGFILE
+  const char* COLOR_LEVEL[] = {
+    "\e[0;31m",
+    "\e[0;33m",
+    "\e[0;34m",
+    "\e[0;32m"
+  };
+  #endif
+
   if (!isInit)
     return 1;
-  
+
+  #ifdef LOGFILE
   fprintf(OUT, "[%Lf] [%s] [%s] - %s\n", getRunTime(), LEVEL[code], modname, msg);
+  #else
+  fprintf(OUT, "[%Lf] %s[%s] [%s] - %s\e[0m\n", getRunTime(), COLOR_LEVEL[code], LEVEL[code], modname, msg);
+  #endif
+
   return 0;
 }

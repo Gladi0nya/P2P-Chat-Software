@@ -18,7 +18,6 @@ int main(void) {
   if (startLogger())
     return 1;
   
-  
   logMsg(INFO,    MODULE_NAME, "Test");  
   logMsg(WARNING, MODULE_NAME, "Test");
   logMsg(ERROR,   MODULE_NAME, "Test");
