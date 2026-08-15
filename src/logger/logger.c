@@ -20,14 +20,14 @@ static struct timespec start_time = {0};
 static uint8_t isInit = 0;
 static FILE* OUT = NULL;
 
-/** **********************************************
- *  startLogger
- *
- *  Initialize logger module.
- *
- *  @retval 0 Successfully initialized.
- *  @retval 1 Failed to initialized.
- *************************************************/
+/** ----------------------------------------------------------- *
+  *  startLogger                                                *
+  *                                                             *
+  *  Initialize logger module.                                  *
+  *                                                             *
+  *  @retval 0 Successfully initialized.                        *
+  *  @retval 1 Failed to initialized.                           *
+  * ----------------------------------------------------------- **/
 
 uint8_t startLogger(void)
 {
@@ -74,10 +74,10 @@ static inline long double getRunTime(void)
 uint8_t logMsg(const uint8_t code, const char* modname, const char* msg)
 {
   const char* LEVEL[] = {
-    "ERROR",
+    "ERROR  ",
     "WARNING",
-    "INFO",
-    "DEBUG"
+    "INFO   ",
+    "DEBUG  "
   };
 
   #ifndef LOGFILE
@@ -93,9 +93,9 @@ uint8_t logMsg(const uint8_t code, const char* modname, const char* msg)
     return 1;
 
   #ifdef LOGFILE
-  fprintf(OUT, "[%Lf] [%s] [%s] - %s\n", getRunTime(), modname, LEVEL[code], msg);
+  fprintf(OUT, "[%Lf] [%s] x%s | %s\n", getRunTime(), modname, LEVEL[code], msg);
   #else
-  fprintf(OUT, "[%Lf] [%s] [%s%s\e[0m] - %s\n", getRunTime(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
+  fprintf(OUT, "[%Lf] [%s] %s%s\e[0m %s\n", getRunTime(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
   #endif
 
   return 0;
