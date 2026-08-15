@@ -124,7 +124,7 @@ uint8_t logMsg(const uint8_t code, const char* modname, const char* msg)
     return 1;
 
   #ifdef LOGFILE
-  fprintf(OUT, "%Lf %s %s %s\n", getRunTime(), modname, LEVEL[code], msg);
+  fprintf(OUT, "%Lf | %s | %s %s\n", getRunTime(), modname, LEVEL[code], msg);
   #else
   fprintf(OUT, "%Lf | %s | %s%s\e[0m - %s\n", getRunTime(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
   #endif
