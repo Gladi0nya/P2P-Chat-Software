@@ -20,8 +20,8 @@ static struct timespec start_time = {0};
 static uint8_t isInit = 0;
 static FILE* OUT = NULL;
 
-
-uint8_t startLogger(void) {
+uint8_t startLogger(void)
+{
   if (isInit)
     return 1;
 
@@ -36,7 +36,8 @@ uint8_t startLogger(void) {
   return clock_gettime(CLOCK_MONOTONIC, &start_time) == -1;
 }
 
-uint8_t stopLogger(void) {
+uint8_t stopLogger(void)
+{
   if (!isInit)
     return 1;
 
@@ -49,7 +50,8 @@ uint8_t stopLogger(void) {
   return 0;
 }
 
-static inline long double getRunTime(void) {
+static inline long double getRunTime(void)
+{
   struct timespec current;
 
   clock_gettime(CLOCK_MONOTONIC, &current);
@@ -60,7 +62,8 @@ static inline long double getRunTime(void) {
   return elapsed;
 }
 
-uint8_t logMsg(const uint8_t code, const char* modname, const char* msg) {
+uint8_t logMsg(const uint8_t code, const char* modname, const char* msg)
+{
   const char* LEVEL[] = {
     "ERROR",
     "WARNING",
@@ -81,9 +84,9 @@ uint8_t logMsg(const uint8_t code, const char* modname, const char* msg) {
     return 1;
 
   #ifdef LOGFILE
-fprintf(OUT, "[%Lf] [%s] [%s] - %s\n", getRunTime(), modname, LEVEL[code], msg);
+  fprintf(OUT, "[%Lf] [%s] [%s] - %s\n", getRunTime(), modname, LEVEL[code], msg);
   #else
-fprintf(OUT, "[%Lf] [%s] %s[%s] - %s\e[0m\n", getRunTime(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
+  fprintf(OUT, "[%Lf] [%s] %s[%s] - %s\e[0m\n", getRunTime(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
   #endif
 
   return 0;

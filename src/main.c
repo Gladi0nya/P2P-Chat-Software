@@ -14,7 +14,8 @@
 
 #define MODULE_NAME "BOOTSTRAP"
 
-int main(void) {
+int main(void)
+{
   if (startLogger())
     return 1;
   
