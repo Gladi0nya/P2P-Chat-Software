@@ -19,8 +19,10 @@ build/logger.o:
 $(EXEC): $(OBJ)
 	$(CC) $(OBJ) -o $(EXEC) $(LDFLAGS)
 
-run: $(EXEC)
+build: $(EXEC)
 	rm -f build/*.o
+
+run: build
 	./$(EXEC)
 
 clean:
