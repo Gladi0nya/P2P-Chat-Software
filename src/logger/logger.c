@@ -1,3 +1,15 @@
+/**
+ * @file logger.c
+ * @brief Logger module
+ *
+ * @author Tom Schmitt
+ * @author Augustin Barniet
+ *
+ * Copyright (c) 2026 Tom Schmitt, Augustin Barniet
+ * All rights reserved.
+ *
+ */
+
 #include "logger.h"
 
 #include <stdio.h>

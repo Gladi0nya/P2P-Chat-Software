@@ -16,7 +16,7 @@ build/client.o:
 build/logger.o:
 	$(CC) $(CFLAGS) src/logger/logger.c -o build/logger.o
 
-$(EXEC): $(OBJ)
+$(EXEC): mkdir $(OBJ)
 	$(CC) $(OBJ) -o $(EXEC) $(LDFLAGS)
 
 build: $(EXEC)

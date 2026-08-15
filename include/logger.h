@@ -1,3 +1,15 @@
+/**
+ * @file  logger.h
+ * @brief Logger definitions
+ *
+ * @author Tom Schmitt
+ * @author Augustin Barniet
+ *
+ * Copyright (c) 2026 Tom Schmitt, Augustin Barniet
+ * All rights reserved.
+ *
+ */
+
 #ifndef  LOGGER_H
 #define LOGGER_H
 
