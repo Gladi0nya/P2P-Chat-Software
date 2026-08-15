@@ -20,6 +20,15 @@ static struct timespec start_time = {0};
 static uint8_t isInit = 0;
 static FILE* OUT = NULL;
 
+/** **********************************************
+ *  startLogger
+ *
+ *  Initialize logger module.
+ *
+ *  @retval 0 Successfully initialized.
+ *  @retval 1 Failed to initialized.
+ *************************************************/
+
 uint8_t startLogger(void)
 {
   if (isInit)
@@ -86,7 +95,7 @@ uint8_t logMsg(const uint8_t code, const char* modname, const char* msg)
   #ifdef LOGFILE
   fprintf(OUT, "[%Lf] [%s] [%s] - %s\n", getRunTime(), modname, LEVEL[code], msg);
   #else
-  fprintf(OUT, "[%Lf] [%s] %s[%s] - %s\e[0m\n", getRunTime(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
+  fprintf(OUT, "[%Lf] [%s] [%s%s\e[0m\n] - %s", getRunTime(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
   #endif
 
   return 0;
