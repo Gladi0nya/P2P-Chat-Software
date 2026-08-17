@@ -15,8 +15,6 @@
 
 #include <stdio.h>
 
-#define MODULE_NAME "BOOTSTRAP"
-
 uint8_t bootstrap_run(void)
 {
   if (log_init())
@@ -25,11 +23,11 @@ uint8_t bootstrap_run(void)
     return 1;
   }
   
-  log_msg(DEBUG, MODULE_NAME, "Logger initialized.");  
+  LOG_DEBUG("Logger initialized.");  
 
-  log_msg(INFO,  MODULE_NAME, "Program exit.");
+  LOG_INFO("Program exit.");
 
-  log_msg(DEBUG, MODULE_NAME, "Logger shutdown.");
+  LOG_DEBUG("Logger shutdown.");
 
   return log_shutdown();
 }

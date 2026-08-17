@@ -87,7 +87,7 @@ static inline long double log_time(void)
 }
 
 /** ----------------------------------------------------------- *
-  *  log_msg                                                    *
+  *  log_write                                                  *
   *                                                             *
   *  Display message in the logs.                               *
   *                                                             *
@@ -99,9 +99,9 @@ static inline long double log_time(void)
   *  @retval 1 Failed to initialized.                           *
   * ----------------------------------------------------------- **/
 
-uint8_t log_msg(const uint8_t code, const char* const restrict modname, const char* const restrict msg)
+uint8_t log_write(const uint8_t level, const char* const restrict filename, const uint64_t line, const char* const restrict msg)
 {
-  const char* const restrict LEVEL[] = {
+  const char* const restrict LEVEL_NAME[] = {
     "ERROR  ",
     "WARNING",
     "INFO   ",
@@ -109,7 +109,7 @@ uint8_t log_msg(const uint8_t code, const char* const restrict modname, const ch
   };
 
   #ifndef LOGFILE
-  const char* const restrict COLOR_LEVEL[] = {
+  const char* const restrict LEVEL_COLOR[] = {
     "\e[0;31m",
     "\e[0;33m",
     "\e[0;34m",
@@ -120,9 +120,9 @@ uint8_t log_msg(const uint8_t code, const char* const restrict modname, const ch
   if (!isInit) return 1;
 
   #ifdef LOGFILE
-  fprintf(OUT, "%Lf | %s | %s %s\n", log_time(), modname, LEVEL[code], msg);
+  fprintf(OUT, "%Lf | %s:%lu | %s %s\n", log_time(), filename, line, LEVEL_NAME[level], msg);
   #else
-  fprintf(OUT, "%Lf | %s | %s%s\e[0m - %s\n", log_time(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
+  fprintf(OUT, "%Lf | %s:%lu | %s%s\e[0m - %s\n", log_time(), filename, line, LEVEL_COLOR[level], LEVEL_NAME[level], msg);
   #endif
 
   return 0;
