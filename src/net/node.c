@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <errno.h>
+
 #include <pthread.h>
 
 typedef struct {
@@ -54,13 +55,17 @@ uint8_t CreateChannelForPeer(const char* peer_ip, const int peer_port, const int
         return 1;
     }
     
-    printf("[*] Écoute sur le port %d\n", my_port);
-    
     struct sockaddr_in peer_addr = {
         .sin_family = AF_INET,
         .sin_port = htons(peer_port)
     };
-    inet_pton(AF_INET, peer_ip, &peer_addr.sin_addr);
+
+
+    if (inet_pton(AF_INET, peer_ip, &peer_addr.sin_addr) != 1) {
+      perror("peer ip");
+      close(sock);
+      return 1;
+    }
     
     ThreadArgs args = {sock, peer_addr};
     pthread_t listener;
@@ -68,7 +73,7 @@ uint8_t CreateChannelForPeer(const char* peer_ip, const int peer_port, const int
     
     printf("[*] Hole punching vers %s:%d...\n", peer_ip, peer_port);
     
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
         char msg[32];
         snprintf(msg, sizeof(msg), "PING-%d", i);
         sendto(sock, msg, strlen(msg), 0,
@@ -80,9 +85,6 @@ uint8_t CreateChannelForPeer(const char* peer_ip, const int peer_port, const int
 
     printf("\n[Chat] Connexion en cours... Tapez vos messages:\n");
     char buffer[1024];
-    
-    sendto(sock, "HELLO", 5, 0,
-           (struct sockaddr*)&peer_addr, sizeof(peer_addr));
     
     while (1) {
         printf("[Chat] ");

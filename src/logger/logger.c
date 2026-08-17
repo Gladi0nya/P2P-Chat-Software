@@ -18,10 +18,10 @@
 
 static struct timespec start_time = {0};
 static uint8_t isInit = 0;
-static FILE* OUT = NULL;
+static FILE* restrict OUT = NULL;
 
 /** ----------------------------------------------------------- *
-  *  startLogger                                                *
+  *  log_init                                                   *
   *                                                             *
   *  Initialize the logger module.                              *
   *                                                             *
@@ -29,24 +29,22 @@ static FILE* OUT = NULL;
   *  @retval 1 Failed to initialized.                           *
   * ----------------------------------------------------------- **/
 
-uint8_t startLogger(void)
+uint8_t log_init(void)
 {
-  if (isInit)
-    return 1;
+  if (isInit) return 1;
 
   #ifdef LOGFILE
-  if ((OUT = fopen(LOGFILE, "w+")) == NULL)
-    return 1;
+  if ((OUT = fopen(LOGFILE, "w+")) == NULL) return 1;
   #else
   OUT = stdout;
   #endif
   isInit = 1;
   
-  return clock_gettime(CLOCK_MONOTONIC, &start_time) == -1;
+  return (clock_gettime(CLOCK_MONOTONIC, &start_time) == -1);
 }
 
 /** ----------------------------------------------------------- *
-  *  stoptLogger                                                *
+  *  stop_logger                                                *
   *                                                             *
   *  Stop the logger module.                                    *
   *                                                             *
@@ -54,10 +52,9 @@ uint8_t startLogger(void)
   *  @retval 1 Failed to stop.                                  *
   * ----------------------------------------------------------- **/
 
-uint8_t stopLogger(void)
+uint8_t log_shutdown(void)
 {
-  if (!isInit)
-    return 1;
+  if (!isInit) return 1;
 
   #ifdef LOGFILE
   if (fclose(OUT) == -1)
@@ -69,7 +66,7 @@ uint8_t stopLogger(void)
 }
 
 /** ----------------------------------------------------------- *
-  *  getRunTime                                                 *
+  *  log_time                                                   *
   *                                                             *
   *  Retrieve the elapsed time since the logger was initialized.*
   *                                                             *
@@ -77,7 +74,7 @@ uint8_t stopLogger(void)
   *  @retval 1 Failed to initialized.                           *
   * ----------------------------------------------------------- **/
 
-static inline long double getRunTime(void)
+static inline long double log_time(void)
 {
   struct timespec current;
 
@@ -90,7 +87,7 @@ static inline long double getRunTime(void)
 }
 
 /** ----------------------------------------------------------- *
-  *  logMsg                                                     *
+  *  log_msg                                                    *
   *                                                             *
   *  Display message in the logs.                               *
   *                                                             *
@@ -102,9 +99,9 @@ static inline long double getRunTime(void)
   *  @retval 1 Failed to initialized.                           *
   * ----------------------------------------------------------- **/
 
-uint8_t logMsg(const uint8_t code, const char* modname, const char* msg)
+uint8_t log_msg(const uint8_t code, const char* const restrict modname, const char* const restrict msg)
 {
-  const char* LEVEL[] = {
+  const char* const restrict LEVEL[] = {
     "ERROR  ",
     "WARNING",
     "INFO   ",
@@ -112,7 +109,7 @@ uint8_t logMsg(const uint8_t code, const char* modname, const char* msg)
   };
 
   #ifndef LOGFILE
-  const char* COLOR_LEVEL[] = {
+  const char* const restrict COLOR_LEVEL[] = {
     "\e[0;31m",
     "\e[0;33m",
     "\e[0;34m",
@@ -120,13 +117,12 @@ uint8_t logMsg(const uint8_t code, const char* modname, const char* msg)
   };
   #endif
 
-  if (!isInit)
-    return 1;
+  if (!isInit) return 1;
 
   #ifdef LOGFILE
-  fprintf(OUT, "%Lf | %s | %s %s\n", getRunTime(), modname, LEVEL[code], msg);
+  fprintf(OUT, "%Lf | %s | %s %s\n", log_time(), modname, LEVEL[code], msg);
   #else
-  fprintf(OUT, "%Lf | %s | %s%s\e[0m - %s\n", getRunTime(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
+  fprintf(OUT, "%Lf | %s | %s%s\e[0m - %s\n", log_time(), modname, COLOR_LEVEL[code], LEVEL[code], msg);
   #endif
 
   return 0;
