@@ -26,7 +26,7 @@
 
 int main(int argc, char **argv)
 {
-  (void)argc;
+  (void)argc; // Remove compiler warnings (might add program arguments later)
   (void)argv;
   
   return bootstrap_run();
