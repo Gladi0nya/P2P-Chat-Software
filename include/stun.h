@@ -12,5 +12,5 @@
 
 #ifndef STUN_H
 #define STUN_H
-
+int stun_request(void);
 #endif
