@@ -120,7 +120,7 @@ uint8_t log_write(const uint8_t level, const char* const restrict filename, cons
   if (!isInit) return 1;
 
   #ifdef LOGFILE
-  fprintf(OUT, "%015.15Lf | %s:%lu | %s %s\n", (long double)log_time(), filename, line, LEVEL_NAME[level], msg);
+  fprintf(OUT, "%015.9Lf | %s:%lu | %s %s\n", (long double)log_time(), filename, line, LEVEL_NAME[level], msg);
   #else
   fprintf(OUT, "%015.9Lf | %s:%lu | %s%s\e[0m - %s\n", (long double)log_time(), filename, line, LEVEL_COLOR[level], LEVEL_NAME[level], msg);
   #endif
