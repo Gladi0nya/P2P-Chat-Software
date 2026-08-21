@@ -111,10 +111,10 @@ uint8_t log_write(const uint8_t level, const char* const restrict filename, cons
 
   #ifndef LOGFILE
   const char* const restrict LEVEL_COLOR[] = {
-    "\e[0;31m",
-    "\e[0;33m",
-    "\e[0;34m",
-    "\e[0;32m"
+    "\033[0;31m",
+    "\033[0;33m",
+    "\033[0;34m",
+    "\033[0;32m"
   };
   #endif
 
@@ -123,7 +123,7 @@ uint8_t log_write(const uint8_t level, const char* const restrict filename, cons
   #ifdef LOGFILE
   fprintf(OUT, "%015.9Lf %s %s [%s:%lu]\n", (float80_t)log_time(), LEVEL_NAME[level], msg, filename, line);
   #else
-  fprintf(OUT, "%015.9Lf %s%s\e[0m - %s [%s:%lu]\n", (float80_t)log_time(), LEVEL_COLOR[level], LEVEL_NAME[level], msg, filename, line);
+  fprintf(OUT, "%015.9Lf %s%s\033[0m - %s [%s:%lu]\n", (float80_t)log_time(), LEVEL_COLOR[level], LEVEL_NAME[level], msg, filename, line);
   #endif
 
   return 0;

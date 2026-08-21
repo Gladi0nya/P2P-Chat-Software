@@ -79,7 +79,7 @@ uint8_t CreateChannelForPeer(const char* peer_ip, const int peer_port, const int
         sendto(sock, msg, strlen(msg), 0,
                (struct sockaddr*)&peer_addr, sizeof(peer_addr));
         printf("[*] Envoyé %s\n", msg);
-        usleep(100000); 
+        sleep(100000); 
     }
     
 

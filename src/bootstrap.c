@@ -10,7 +10,6 @@
  *
  */
 
-#include "bootstrap.h"
 #include "logger.h"
 #include "stun.h"
 

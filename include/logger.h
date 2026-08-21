@@ -13,6 +13,8 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
+#define _POSIX_C_SOURCE 200809L 
+
 #include <stdint.h>
 
 #define LOG_LEVEL_ERROR   0

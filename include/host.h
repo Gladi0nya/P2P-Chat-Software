@@ -3,6 +3,8 @@
 
 #define NOT_AN_IP "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
 
+#define _POSIX_C_SOURCE 200809L 
+
 #include <stdint.h>
 
 typedef char ipv4_t[16];

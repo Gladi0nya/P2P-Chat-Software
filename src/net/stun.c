@@ -98,8 +98,7 @@ int stun_request(void)
     goto start;
   }
 
-  LOG_INFO("IP resolved.");
-  printf("%s %s\n", STUN_SERVERS[stun_server_index].hostname, server_ip);
+  LOG_INFO("STUN server ip resolved.");
   
 
   return 0;
