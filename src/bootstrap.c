@@ -25,11 +25,12 @@ uint8_t bootstrap_run(void)
     return 1;
   }
 
-  LOG_INFO("Bootstrap started.");
   LOG_DEBUG("Logger initialized.");  
+  LOG_INFO("Bootstrap started.");
 
   if (stun_request()) {
     LOG_ERROR("stun_request() failed.");
+    LOG_INFO("STUN method not available, other methods not implemented yet.");
     goto exit;
   }
 

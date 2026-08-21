@@ -1,14 +1,12 @@
 #ifndef HOST_H
 #define HOST_H
 
-#define NOT_AN_IP "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
-
 #define _POSIX_C_SOURCE 200809L 
 
 #include <stdint.h>
 
-typedef char ipv4_t[16];
+#include <arpa/inet.h>
 
-int resolve_domain(const char* const restrict hostname, ipv4_t* host_ip);
+int resolve_domain(const char* const restrict hostname, struct sockaddr_in* out_addr);
 
 #endif
