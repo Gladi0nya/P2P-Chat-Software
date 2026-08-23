@@ -10,7 +10,12 @@
  *
  */
 
-#include "bootstrap.h"
+#include "generic_type.h"
+
+#include <stdint.h>
+#include <stdio.h>
+
+extern uint8_t bootstrap_run(void);
 
 /** ----------------------------------------------------------- *
   *  main                                                       *
@@ -28,6 +33,7 @@ int main(int argc, char **argv)
 {
   (void)argc; // Remove compiler warnings (might add program arguments later)
   (void)argv;
+
   
   return bootstrap_run();
 }

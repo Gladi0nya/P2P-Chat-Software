@@ -13,4 +13,7 @@
 #ifndef STUN_H
 #define STUN_H
 
+#define _POSIX_C_SOURCE 200809L 
+
+int stun_request(void);
 #endif

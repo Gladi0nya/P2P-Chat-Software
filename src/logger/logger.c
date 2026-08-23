@@ -11,6 +11,7 @@
  */
 
 #include "logger.h"
+#include "generic_type.h"
 
 #include <stdio.h>
 
@@ -74,13 +75,13 @@ uint8_t log_shutdown(void)
   *  @retval 1 Failed to initialized.                           *
   * ----------------------------------------------------------- **/
 
-static inline long double log_time(void)
+static inline float80_t log_time(void)
 {
   struct timespec current;
 
   clock_gettime(CLOCK_MONOTONIC, &current);
 
-  const long double elapsed = (current.tv_sec - start_time.tv_sec) + 
+  const float80_t elapsed = (current.tv_sec - start_time.tv_sec) + 
           (current.tv_nsec - start_time.tv_nsec) / 1000000000.0L;
 
   return elapsed;
@@ -110,19 +111,19 @@ uint8_t log_write(const uint8_t level, const char* const restrict filename, cons
 
   #ifndef LOGFILE
   const char* const restrict LEVEL_COLOR[] = {
-    "\e[0;31m",
-    "\e[0;33m",
-    "\e[0;34m",
-    "\e[0;32m"
+    "\033[0;31m",
+    "\033[0;33m",
+    "\033[0;34m",
+    "\033[0;32m"
   };
   #endif
 
   if (!isInit) return 1;
 
   #ifdef LOGFILE
-  fprintf(OUT, "%015.9Lf | %s:%lu | %s %s\n", (long double)log_time(), filename, line, LEVEL_NAME[level], msg);
+  fprintf(OUT, "%015.9Lf %s %s [%s:%lu]\n", (float80_t)log_time(), LEVEL_NAME[level], msg, filename, line);
   #else
-  fprintf(OUT, "%015.9Lf | %s:%lu | %s%s\e[0m - %s\n", (long double)log_time(), filename, line, LEVEL_COLOR[level], LEVEL_NAME[level], msg);
+  fprintf(OUT, "%015.9Lf %s%s\033[0m - %s [%s:%lu]\n", (float80_t)log_time(), LEVEL_COLOR[level], LEVEL_NAME[level], msg, filename, line);
   #endif
 
   return 0;

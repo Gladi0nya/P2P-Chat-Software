@@ -10,8 +10,8 @@
  *
  */
 
-#include "bootstrap.h"
 #include "logger.h"
+#include "stun.h"
 
 #include <stdio.h>
 
@@ -25,11 +25,17 @@ uint8_t bootstrap_run(void)
     return 1;
   }
 
-  LOG_INFO("Bootstrap started.");
   LOG_DEBUG("Logger initialized.");  
+  LOG_INFO("Bootstrap started.");
 
-  sleep(10);
-  
+  if (stun_request()) {
+    LOG_ERROR("stun_request() failed.");
+    LOG_INFO("STUN method not available, other methods not implemented yet.");
+    goto exit;
+  }
+
+
+  exit:
   LOG_INFO("Bootstrap exit.");
   LOG_DEBUG("Logger shutdown.");
 
