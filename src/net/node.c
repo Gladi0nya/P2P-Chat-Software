@@ -3,7 +3,6 @@
 
 #include "node.h"
 #include "logger.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +11,6 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <errno.h>
-
 #include <pthread.h>
 
 typedef struct {
@@ -42,41 +40,57 @@ void* listen_thread(void* arg) {
 }
 
 uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
-  if (sock < 0) {
-    LOG_ERROR("Invalid socket provided.");
-
-    return 1;
-  }
+    if (sock < 0) {
+        LOG_ERROR("Invalid socket provided.");
+        return 1;
+    }
     
-  struct sockaddr_in peer = {
-    .sin_family = AF_INET,
-    .sin_port = htons(peer_addr.port),
-    .sin_addr.s_addr = peer_addr.ip
-  };
+    struct sockaddr_in peer = {
+        .sin_family = AF_INET,
+        .sin_port = htons(peer_addr.port),
+        .sin_addr.s_addr = peer_addr.ip
+    };
     
-    ThreadArgs args = {sock, peer};
+    char ip_str[INET_ADDRSTRLEN];
+    struct in_addr addr = { peer_addr.ip };
+    inet_ntop(AF_INET, &addr, ip_str, sizeof(ip_str));
+    printf("[*] Hole punching to %s:%u...\n", ip_str, peer_addr.port);
+    
+    ThreadArgs* args = malloc(sizeof(ThreadArgs));
+    if (!args) {
+        LOG_ERROR("malloc failed");
+        return 1;
+    }
+    args->sock = sock;
+    args->peer_addr = peer;
+    
     pthread_t listener;
-    pthread_create(&listener, NULL, listen_thread, &args);
-    
-    printf("[*] Hole punching to %u.%u.%u.%u:%u...\n", *(uint8_t*)&peer_addr.ip, *((uint8_t*)&peer_addr.ip + 1), *((uint8_t*)&peer_addr.ip + 2), *((uint8_t*)&peer_addr.ip + 3), peer_addr.port);
+    if (pthread_create(&listener, NULL, listen_thread, args) != 0) {
+        LOG_ERROR("pthread_create failed");
+        free(args);
+        return 1;
+    }
+    pthread_detach(listener);  
     
     for (int i = 0; i < 100; i++) {
         char msg[32];
         snprintf(msg, sizeof(msg), "PING-%d", i);
-        sendto(sock, msg, strlen(msg), 0,
-               (struct sockaddr*)&peer, sizeof(peer));
-        printf("[*] Sent %s\n", msg);
-
-	struct timespec ts = {
-	  .tv_sec = 100 / 1000,
-	  .tv_nsec = (100 % 1000) * 1000000
-	};
-	
-	nanosleep(&ts, NULL);
-	
+        
+        ssize_t sent = sendto(sock, msg, strlen(msg), 0,
+                              (struct sockaddr*)&peer, sizeof(peer));
+        if (sent < 0) {
+            LOG_ERROR("sendto failed.");
+        } else {
+            printf("[*] Sent %s\n", msg);
+        }
+        
+        struct timespec ts = {
+            .tv_sec = 0,
+            .tv_nsec = 100000000  // 100 ms
+        };
+        nanosleep(&ts, NULL);
     }
     
-
     printf("\n[Chat] Connecting... Enter messages:\n");
     char buffer[1024];
     
@@ -84,8 +98,8 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
         printf("[Chat] ");
         fflush(stdout);
         
-        fgets(buffer, sizeof(buffer), stdin);
-        buffer[strcspn(buffer, "\n")] = 0;
+        if (fgets(buffer, sizeof(buffer), stdin) == NULL) break;
+        buffer[strcspn(buffer, "\n")] = '\0';
         
         if (strcmp(buffer, "quit") == 0) break;
         
