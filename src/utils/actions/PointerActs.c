@@ -1,13 +1,22 @@
 #include "PointerActs.h"
 
 
-/*
-    ---------------------------------------------------------------------
-                            Freeing pointers
-    ---------------------------------------------------------------------
-*/
 
-//Free any type of pointer and places NULL as its new value
+
+/** ------------------------------------------------------------------------------------------- *
+ *  freeNull                                                                                   *
+ *                                                                                              *
+ *  Free any type of pointer and places NULL as its new value                                   *
+ *                                                                                              *
+ *  @param log      File used to make logs                                                      *
+ *  @param toFree   The Config* to be freed                                                     *
+ *  @param cfg      The Config* which will be edited with the given file's value                *
+ *                                                                                              *
+ *  @retval -1  error in arguments                                                              *
+ *  @retval 0   error                                                                           *
+ *  @retval 1   done                                                                            *
+ *  ------------------------------------------------------------------------------------------- **/
+//
 void freeNull(void** toFree){
     //If the provided pointer is not already NULL
     if (toFree != NULL && *toFree != NULL){
