@@ -57,7 +57,7 @@ typedef struct STUN_HOST stun_host_t;
 
 static const stun_host_t STUN_SERVERS[] = {
   {"stun.l.google.com", 19302},
-  {"stun.l.google.com", 19302},
+  {"stun.l.google.com", 3478},
   {"stun.cloudflare.com", 3478},
   {"stun1.l.google.com", 3478},
   {"stun2.l.google.com", 19302},
