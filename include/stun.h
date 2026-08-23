@@ -15,5 +15,14 @@
 
 #define _POSIX_C_SOURCE 200809L 
 
-int stun_request(void);
+struct ADDR {
+  uint32_t ip;
+  uint16_t port;
+};
+
+typedef struct ADDR addr_t;
+
+typedef struct  NAT_INFO nat_info_t;
+
+int stun_bind_sock(int* sock, uint16_t listening_port);
 #endif

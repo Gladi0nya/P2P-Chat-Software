@@ -28,8 +28,10 @@ uint8_t bootstrap_run(void)
   LOG_DEBUG("Logger initialized.");  
   LOG_INFO("Bootstrap started.");
 
-  if (stun_request()) {
-    LOG_ERROR("stun_request() failed.");
+  int sock;
+  
+  if (stun_bind_sock(&sock, 0)) {
+    LOG_ERROR("stun_bind_sock() failed.");
     LOG_INFO("STUN method not available, other methods not implemented yet.");
     goto exit;
   }
