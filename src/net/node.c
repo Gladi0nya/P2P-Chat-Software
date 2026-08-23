@@ -60,7 +60,7 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
     
     printf("[*] Hole punching to %u.%u.%u.%u:%u...\n", *(uint8_t*)&peer_addr.ip, *((uint8_t*)&peer_addr.ip + 1), *((uint8_t*)&peer_addr.ip + 2), *((uint8_t*)&peer_addr.ip + 3), peer_addr.port);
     
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
         char msg[32];
         snprintf(msg, sizeof(msg), "PING-%d", i);
         sendto(sock, msg, strlen(msg), 0,
