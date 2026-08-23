@@ -90,7 +90,7 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
         if (strcmp(buffer, "quit") == 0) break;
         
         sendto(sock, buffer, strlen(buffer), 0,
-               (struct sockaddr*)&peer_addr, sizeof(peer_addr));
+               (struct sockaddr*)&peer, sizeof(peer));
     }
     
     pthread_cancel(listener);
