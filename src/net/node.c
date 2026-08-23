@@ -18,6 +18,8 @@ typedef struct {
     struct sockaddr_in peer_addr;
 } ThreadArgs;
 
+uint8_t isConnected = 0;
+
 void* listen_thread(void* arg) {
     ThreadArgs* args = (ThreadArgs*)arg;
     char buffer[1024];
@@ -32,10 +34,13 @@ void* listen_thread(void* arg) {
 	fflush(stdout);
 	
         if (n > 0) {
-            buffer[n] = '\0';
-            printf("\n[Pair] %s\n", buffer);
-            printf("[Chat] ");
-            fflush(stdout);
+	  if (!isConnected)
+	    isConnected = 1;
+	  
+	  buffer[n] = '\0';
+	  printf("\n[Pair] %s\n", buffer);
+	  printf("[Chat] ");
+	  fflush(stdout);
         }
     }
     return NULL;
@@ -80,7 +85,7 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
     printf("[*] Local port: %d\n", ntohs(local.sin_port));
     printf("[*] Target: %s:%d\n", ip_str, peer_addr.port);
     
-    while(1) {
+    while(!isConnected) {
         char msg[32];
         snprintf(msg, sizeof(msg), "PING");
         
@@ -89,7 +94,7 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
         if (sent < 0) {
             LOG_ERROR("sendto failed.");
         } else {
-            printf("[*] Sent %s\n", msg);
+	  //printf("[*] Sent %s\n", msg);
         }
         
         struct timespec ts = {
