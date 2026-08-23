@@ -34,15 +34,22 @@ void* listen_thread(void* arg) {
 	
         if (n > 0) {
 	  buffer[n] = '\0';
-	  if (!isConnected)
-	    isConnected = 1;
 
-	  if (strcmp(buffer, "connected") == 0)
+	  if (!isConnected) {
+	    isConnected = 1;
+	    LOG_INFO("Receiving packet from peer.");
+	  }
+
+	  if (strcmp(buffer, "connected") == 0) {
 	    isPeerConnected = 1;
+	    LOG_INFO("Peer received packet.");
+	  }
       
-	  printf("\n[Pair] %s\n", buffer);
-	  printf("[Chat] ");
-	  fflush(stdout);
+	  if (isConnected && isPeerConnected) {
+	    printf("\n[Pair] %s\n", buffer);
+	    printf("[Chat] ");
+	    fflush(stdout);
+	  }
         }
     }
     return NULL;
