@@ -18,9 +18,6 @@ typedef struct {
     struct sockaddr_in peer_addr;
 } ThreadArgs;
 
-uint8_t isConnected     = 0;
-uint8_t isPeerConnected = 0;
-
 void* listen_thread(void* arg) {
     ThreadArgs* args = (ThreadArgs*)arg;
     char buffer[1024];
@@ -31,25 +28,14 @@ void* listen_thread(void* arg) {
         memset(buffer, 0, sizeof(buffer));
         int n = recvfrom(args->sock, buffer, sizeof(buffer) - 1, 0,
                          (struct sockaddr*)&from_addr, &addr_len);
+	printf("test %d\n", n);
+	fflush(stdout);
 	
         if (n > 0) {
-	  buffer[n] = '\0';
-
-	  if (!isConnected) {
-	    isConnected = 1;
-	    LOG_INFO("Receiving packet from peer.");
-	  }
-
-	  if (strcmp(buffer, "connected") == 0) {
-	    isPeerConnected = 1;
-	    LOG_INFO("Peer received packet.");
-	  }
-      
-	  if (isConnected && isPeerConnected) {
-	    printf("\n[Pair] %s\n", buffer);
-	    printf("[Chat] ");
-	    fflush(stdout);
-	  }
+            buffer[n] = '\0';
+            printf("\n[Pair] %s\n", buffer);
+            printf("[Chat] ");
+            fflush(stdout);
         }
     }
     return NULL;
@@ -94,7 +80,7 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
     printf("[*] Local port: %d\n", ntohs(local.sin_port));
     printf("[*] Target: %s:%d\n", ip_str, peer_addr.port);
     
-    while(!isConnected) {
+    while(1) {
         char msg[32];
         snprintf(msg, sizeof(msg), "PING");
         
@@ -112,27 +98,8 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
         };
         nanosleep(&ts, NULL);
     }
-
-    while(!isPeerConnected) {
-        char msg[32];
-        snprintf(msg, sizeof(msg), "connected");
-        
-        ssize_t sent = sendto(sock, msg, strlen(msg), 0,
-                              (struct sockaddr*)&peer, sizeof(peer));
-        if (sent < 0) {
-            LOG_ERROR("sendto failed.");
-        } else {
-	  //printf("[*] Sent %s\n", msg);
-        }
-        
-        struct timespec ts = {
-            .tv_sec = 0,
-            .tv_nsec = 100000000  // 100 ms
-        };
-        nanosleep(&ts, NULL);
-    }
     
-    printf("\n[Chat] Connected... Enter messages:\n");
+    printf("\n[Chat] Connecting... Enter messages:\n");
     char buffer[1024];
     
     while (1) {
