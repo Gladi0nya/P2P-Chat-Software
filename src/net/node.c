@@ -31,8 +31,6 @@ void* listen_thread(void* arg) {
         memset(buffer, 0, sizeof(buffer));
         int n = recvfrom(args->sock, buffer, sizeof(buffer) - 1, 0,
                          (struct sockaddr*)&from_addr, &addr_len);
-	printf("test %d\n", n);
-	fflush(stdout);
 	
         if (n > 0) {
 	  if (!isConnected)
