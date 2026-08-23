@@ -28,14 +28,16 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
-#define DEFAULT_PORT             12345
-#define TIMEOUT_SEC              3
+#define DEFAULT_PORT 12345
+#define TIMEOUT_SEC      3
 
-#define STUN_MAGIC_COOKIE        0x2112A442
-#define STUN_BINDING_REQUEST     0x0001
+#define STUN_MAGIC_COOKIE       0x2112A442
 
-#define STUN_BINDING_SUCCESS     0x0101
-#define STUN_BINDING_ERROR       0x0110
+#define STUN_BINDING_REQUEST    0x0001
+#define STUN_BINDING_SUCCESS    0x0101
+#define STUN_BINDING_ERROR      0x0110
+
+#define STUN_XOR_MAPPED_ADDRESS 0x0020
 
 struct STUN_PACKET {
   uint16_t msg_type;
@@ -83,7 +85,7 @@ static int extract_xor_mapped_address(const uint8_t* response, size_t recv_len,
         uint16_t attr_len  = ntohs(*(uint16_t*)&response[offset + 2]);
         offset += 4;
 
-        if (attr_type == 0x0020) {  // XOR-MAPPED-ADDRESS                                                                                                                                           
+        if (attr_type == STUN_XOR_MAPPED_ADDRESS) {  // XOR-MAPPED-ADDRESS                                                                                                                                           
             if (offset + 4 > recv_len) break;
 
             // Skip first byte (reserved) and the second (family)                                                                                                                                   
