@@ -28,7 +28,9 @@ void* listen_thread(void* arg) {
         memset(buffer, 0, sizeof(buffer));
         int n = recvfrom(args->sock, buffer, sizeof(buffer) - 1, 0,
                          (struct sockaddr*)&from_addr, &addr_len);
-        
+	printf("test %d\n", n);
+	fflush(stdout);
+	
         if (n > 0) {
             buffer[n] = '\0';
             printf("\n[Pair] %s\n", buffer);
@@ -48,7 +50,7 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
     struct sockaddr_in peer = {
         .sin_family = AF_INET,
         .sin_port = htons(peer_addr.port),
-        .sin_addr.s_addr = peer_addr.ip
+        .sin_addr.s_addr = htonl(peer_addr.ip)
     };
     
     char ip_str[INET_ADDRSTRLEN];
