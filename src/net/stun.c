@@ -174,7 +174,7 @@ static int stun_receive(int sock, uint8_t* response, size_t* recv_len,
   return 0;
 }
 
-int stun_bind_sock(int* sock, uint16_t listening_port)
+int stun_bind_sock(int* sock, addr_t* pub_addr)
 {
   uint8_t pass = 0;
   struct sockaddr_in server_addr, local_addr;
@@ -193,10 +193,10 @@ int stun_bind_sock(int* sock, uint16_t listening_port)
   local_addr.sin_family = AF_INET;              
   local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-  if (listening_port < 1001)
+  if (pub_addr->port < 1001)
     local_addr.sin_port = htons(DEFAULT_PORT);
   else
-    local_addr.sin_port = htons(listening_port);
+    local_addr.sin_port = htons(pub_addr->port);
   
   if (bind(*sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
     LOG_ERROR("bind() failed.");
@@ -221,7 +221,7 @@ int stun_bind_sock(int* sock, uint16_t listening_port)
 
   LOG_INFO("STUN server ip resolved.");
 
-  printf("IP: %s\n", inet_ntoa(server_addr.sin_addr));
+  //printf("IP: %s\n", inet_ntoa(server_addr.sin_addr));
 
   server_addr.sin_family = AF_INET;
   server_addr.sin_port   = htons(STUN_SERVERS[pass].port);
@@ -252,13 +252,15 @@ int stun_bind_sock(int* sock, uint16_t listening_port)
   }
 
   if (++pass < STUN_SERVER_COUNT) goto next_pass;
- 
 
   if (memcmp(&pub[0], &pub[1], sizeof(addr_t))) {
     LOG_WARNING("Detected public IP change. Aborting.\n");
 
     return 1;
   }
+
+  pub_addr->ip   = pub[0].ip;
+  pub_addr->port = pub[0].port;
 
   LOG_DEBUG("Friendly P2P NAT detected.");
   

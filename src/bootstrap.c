@@ -29,12 +29,16 @@ uint8_t bootstrap_run(void)
   LOG_INFO("Bootstrap started.");
 
   int sock;
+  addr_t addr;
+  addr.port = 9999;
   
-  if (stun_bind_sock(&sock, 0)) {
+  if (stun_bind_sock(&sock, &addr)) {
     LOG_ERROR("stun_bind_sock() failed.");
     LOG_INFO("STUN method not available, other methods not implemented yet.");
     goto exit;
   }
+
+  printf("Pub port : %u\n", addr.port);
 
 
   exit:

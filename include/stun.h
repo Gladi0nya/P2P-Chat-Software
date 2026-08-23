@@ -22,7 +22,5 @@ struct ADDR {
 
 typedef struct ADDR addr_t;
 
-typedef struct  NAT_INFO nat_info_t;
-
-int stun_bind_sock(int* sock, uint16_t listening_port);
+int stun_bind_sock(int* sock, addr_t* pub_addr);
 #endif
