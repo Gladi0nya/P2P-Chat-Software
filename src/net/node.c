@@ -94,7 +94,7 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
         
         struct timespec ts = {
             .tv_sec = 0,
-            .tv_nsec = 100000000  // 100 ms
+            .tv_nsec = 100000  // 100 ms
         };
         nanosleep(&ts, NULL);
     }
