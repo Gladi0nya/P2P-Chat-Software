@@ -18,7 +18,8 @@ typedef struct {
     struct sockaddr_in peer_addr;
 } ThreadArgs;
 
-uint8_t isConnected = 0;
+uint8_t isConnected     = 0;
+uint8_t isPeerConnected = 0;
 
 void* listen_thread(void* arg) {
     ThreadArgs* args = (ThreadArgs*)arg;
@@ -36,6 +37,9 @@ void* listen_thread(void* arg) {
         if (n > 0) {
 	  if (!isConnected)
 	    isConnected = 1;
+
+	  if (strcmp(buffer, "connected") == 0)
+	    isPeerConnected = 1;
 	  
 	  buffer[n] = '\0';
 	  printf("\n[Pair] %s\n", buffer);
@@ -103,8 +107,27 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
         };
         nanosleep(&ts, NULL);
     }
+
+    while(!isPeerConnected) {
+        char msg[32];
+        snprintf(msg, sizeof(msg), "connected");
+        
+        ssize_t sent = sendto(sock, msg, strlen(msg), 0,
+                              (struct sockaddr*)&peer, sizeof(peer));
+        if (sent < 0) {
+            LOG_ERROR("sendto failed.");
+        } else {
+	  //printf("[*] Sent %s\n", msg);
+        }
+        
+        struct timespec ts = {
+            .tv_sec = 0,
+            .tv_nsec = 100000000  // 100 ms
+        };
+        nanosleep(&ts, NULL);
+    }
     
-    printf("\n[Chat] Connecting... Enter messages:\n");
+    printf("\n[Chat] Connected... Enter messages:\n");
     char buffer[1024];
     
     while (1) {
