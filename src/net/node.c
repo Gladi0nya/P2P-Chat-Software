@@ -1,9 +1,14 @@
+#define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
+
 #include "node.h"
+#include "logger.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <errno.h>
@@ -36,54 +41,43 @@ void* listen_thread(void* arg) {
     return NULL;
 }
 
-uint8_t CreateChannelForPeer(const char* peer_ip, const int peer_port, const int my_port) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0) {
-        perror("socket");
-        return 1;
-    }
-    
-    struct sockaddr_in my_addr = {
-        .sin_family = AF_INET,
-        .sin_addr.s_addr = INADDR_ANY,
-        .sin_port = htons(my_port)
-    };
-    
-    if (bind(sock, (struct sockaddr*)&my_addr, sizeof(my_addr)) < 0) {
-        perror("bind");
-        close(sock);
-        return 1;
-    }
-    
-    struct sockaddr_in peer_addr = {
-        .sin_family = AF_INET,
-        .sin_port = htons(peer_port)
-    };
+uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
+  if (sock < 0) {
+    LOG_ERROR("Invalid socket provided.");
 
-
-    if (inet_pton(AF_INET, peer_ip, &peer_addr.sin_addr) != 1) {
-      perror("peer ip");
-      close(sock);
-      return 1;
-    }
+    return 1;
+  }
     
-    ThreadArgs args = {sock, peer_addr};
+  struct sockaddr_in peer = {
+    .sin_family = AF_INET,
+    .sin_port = htons(peer_addr.port),
+    .sin_addr.s_addr = peer_addr.ip
+  };
+    
+    ThreadArgs args = {sock, peer};
     pthread_t listener;
     pthread_create(&listener, NULL, listen_thread, &args);
     
-    printf("[*] Hole punching vers %s:%d...\n", peer_ip, peer_port);
+    printf("[*] Hole punching to %u.%u.%u.%u:%u...\n", *(uint8_t*)&peer_addr.ip, *((uint8_t*)&peer_addr.ip + 1), *((uint8_t*)&peer_addr.ip + 2), *((uint8_t*)&peer_addr.ip + 3), peer_addr.port);
     
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10; i++) {
         char msg[32];
         snprintf(msg, sizeof(msg), "PING-%d", i);
         sendto(sock, msg, strlen(msg), 0,
-               (struct sockaddr*)&peer_addr, sizeof(peer_addr));
-        printf("[*] Envoyé %s\n", msg);
-        sleep(100000); 
+               (struct sockaddr*)&peer, sizeof(peer));
+        printf("[*] Sent %s\n", msg);
+
+	struct timespec ts = {
+	  .tv_sec = 100 / 1000,
+	  .tv_nsec = (100 % 1000) * 1000000
+	};
+	
+	nanosleep(&ts, NULL);
+	
     }
     
 
-    printf("\n[Chat] Connexion en cours... Tapez vos messages:\n");
+    printf("\n[Chat] Connecting... Enter messages:\n");
     char buffer[1024];
     
     while (1) {

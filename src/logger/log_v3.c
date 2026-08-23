@@ -470,11 +470,11 @@ int8_t write_log(const uint8_t level,const char* restrict const name_file,const 
 {
     if (is_init != (int8_t)0)
     {
-        #ifdef DEBUG_MOD
-            if (level > 2)
-            {
-                return (int8_t)0;
-            }
+       #ifdef DEBUG_MOD
+       if (level > 2)
+       {
+	 return (int8_t)0;
+       }
         #endif
 
         const char* const restrict LEVEL_MSG[] = {

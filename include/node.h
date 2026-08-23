@@ -2,6 +2,8 @@
 #define NODE_H
 #include <stdint.h>
 
-uint8_t CreateChannelForPeer(const char* peer_ip, const int peer_port, const int my_port);
+#include "stun.h"
+
+uint8_t CreateChannelForPeer(int sock, addr_t peer_addr);
 
 #endif

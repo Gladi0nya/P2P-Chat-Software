@@ -30,6 +30,7 @@
 
 #define DEFAULT_PORT 12345
 #define TIMEOUT_SEC      3
+#define PASS_COUNT       2
 
 #define STUN_MAGIC_COOKIE       0x2112A442
 
@@ -48,7 +49,7 @@ struct STUN_PACKET {
 
 typedef struct STUN_PACKET stun_packet_t;
 
-#define STUN_SERVER_COUNT 2
+#define STUN_SERVER_COUNT 6
 
 struct STUN_HOST {
   char*    hostname;
@@ -253,11 +254,8 @@ int stun_bind_sock(int* sock, addr_t* pub_addr)
     return 1;
   }
 
-  if (++pass < STUN_SERVER_COUNT) goto next_pass;
-
-  printf("IP1: %s:%u\n", inet_ntoa(*(struct in_addr*)&pub[0].ip), pub[0].port);
-  printf("IP2: %s:%u\n", inet_ntoa(*(struct in_addr*)&pub[1].ip), pub[1].port);
-  
+  if (++pass < PASS_COUNT) goto next_pass;
+ 
   if (memcmp(&pub[0], &pub[1], sizeof(addr_t))) {
     LOG_WARNING("Detected public IP change. Aborting.\n");
 
