@@ -33,13 +33,13 @@ void* listen_thread(void* arg) {
                          (struct sockaddr*)&from_addr, &addr_len);
 	
         if (n > 0) {
+	  buffer[n] = '\0';
 	  if (!isConnected)
 	    isConnected = 1;
 
 	  if (strcmp(buffer, "connected") == 0)
 	    isPeerConnected = 1;
-	  
-	  buffer[n] = '\0';
+      
 	  printf("\n[Pair] %s\n", buffer);
 	  printf("[Chat] ");
 	  fflush(stdout);
