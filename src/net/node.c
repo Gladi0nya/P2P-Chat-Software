@@ -50,7 +50,7 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
     struct sockaddr_in peer = {
         .sin_family = AF_INET,
         .sin_port = htons(peer_addr.port),
-        .sin_addr.s_addr = htonl(peer_addr.ip)
+        .sin_addr.s_addr = peer_addr.ip
     };
     
     char ip_str[INET_ADDRSTRLEN];
@@ -72,11 +72,17 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
         free(args);
         return 1;
     }
-    pthread_detach(listener);  
+    pthread_detach(listener);
+
+    struct sockaddr_in local;
+    socklen_t len = sizeof(local);
+    getsockname(sock, (struct sockaddr*)&local, &len);
+    printf("[*] Local port: %d\n", ntohs(local.sin_port));
+    printf("[*] Target: %s:%d\n", ip_str, peer_addr.port);
     
-    for (int i = 0; i < 100; i++) {
+    while(1) {
         char msg[32];
-        snprintf(msg, sizeof(msg), "PING-%d", i);
+        snprintf(msg, sizeof(msg), "PING");
         
         ssize_t sent = sendto(sock, msg, strlen(msg), 0,
                               (struct sockaddr*)&peer, sizeof(peer));
