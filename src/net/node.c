@@ -18,6 +18,9 @@ typedef struct {
     struct sockaddr_in peer_addr;
 } ThreadArgs;
 
+uint8_t isConnected = 0;
+uint8_t isPeerConnected = 0;
+
 void* listen_thread(void* arg) {
     ThreadArgs* args = (ThreadArgs*)arg;
     char buffer[1024];
@@ -28,14 +31,23 @@ void* listen_thread(void* arg) {
         memset(buffer, 0, sizeof(buffer));
         int n = recvfrom(args->sock, buffer, sizeof(buffer) - 1, 0,
                          (struct sockaddr*)&from_addr, &addr_len);
-	printf("test %d\n", n);
-	fflush(stdout);
 	
         if (n > 0) {
-            buffer[n] = '\0';
+	  buffer[n] = '\0';
+
+	  if (!isConnected)
+	    isConnected = 1;
+	  if (!isPeerConnected) {
+	    if (strcmp(buffer, "connected") == 0) {
+	      isPeerConnected = 1;
+	    }
+	  }
+
+	  if (isPeerConnected && isConnected) {
             printf("\n[Pair] %s\n", buffer);
             printf("[Chat] ");
             fflush(stdout);
+	  }
         }
     }
     return NULL;
@@ -80,7 +92,7 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
     printf("[*] Local port: %d\n", ntohs(local.sin_port));
     printf("[*] Target: %s:%d\n", ip_str, peer_addr.port);
     
-    while(1) {
+    while(!isConnected) {
         char msg[32];
         snprintf(msg, sizeof(msg), "PING");
         
@@ -94,10 +106,34 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
         
         struct timespec ts = {
             .tv_sec = 0,
-            .tv_nsec = 100000  // 100 ms
+            .tv_nsec = 1000
         };
         nanosleep(&ts, NULL);
     }
+
+    LOG_INFO("Msg received from peer.");
+    LOG_INFO("Waiting for peer to receive us.");
+
+    while(!isPeerConnected) {
+        char msg[32];
+        snprintf(msg, sizeof(msg), "connected");
+        
+        ssize_t sent = sendto(sock, msg, strlen(msg), 0,
+                              (struct sockaddr*)&peer, sizeof(peer));
+        if (sent < 0) {
+            LOG_ERROR("sendto failed.");
+        } else {
+	  //printf("[*] Sent %s\n", msg);
+        }
+        
+        struct timespec ts = {
+            .tv_sec = 0,
+            .tv_nsec = 1000
+        };
+        nanosleep(&ts, NULL);
+    }
+
+    LOG_INFO("Peer received us.");
     
     printf("\n[Chat] Connecting... Enter messages:\n");
     char buffer[1024];
