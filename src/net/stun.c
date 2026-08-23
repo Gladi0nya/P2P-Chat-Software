@@ -253,6 +253,9 @@ int stun_bind_sock(int* sock, addr_t* pub_addr)
 
   if (++pass < STUN_SERVER_COUNT) goto next_pass;
 
+  printf("IP1: %s:%u\n", inet_ntoa(*(struct in_addr*)&pub[0].ip), pub[0].port);
+  printf("IP2: %s:%u\n", inet_ntoa(*(struct in_addr*)&pub[1].ip), pub[1].port);
+  
   if (memcmp(&pub[0], &pub[1], sizeof(addr_t))) {
     LOG_WARNING("Detected public IP change. Aborting.\n");
 
