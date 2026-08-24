@@ -8,3 +8,5 @@
 - [ ] Share file/folders directly peer to peer.
 - [ ] CLI Interface
 - [ ] GUI Interface
+- [ ] Paranoia mode (anti-nmap), shared anti ddos service across network
+- [ ] Administrator system
