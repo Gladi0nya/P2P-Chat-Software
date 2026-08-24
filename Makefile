@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-c -Wall -Wextra -Wrestrict -pedantic -std=c23 -Iinclude/ 
+CFLAGS=-c -Wall -Wextra -Wrestrict -pedantic -std=c2x -Iinclude/ 
 LDFLAGS=
 OBJ=build/entry.o build/bootstrap.o build/logger.o build/node.o build/stun.o build/host.o build/random.o
 EXEC=build/client
