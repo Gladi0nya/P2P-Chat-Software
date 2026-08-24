@@ -1,3 +1,14 @@
+/**
+ * @file  generic_type.h
+ * @brief Generic type definitions
+ *
+ * @author Tom Schmitt
+ *
+ * Copyright (c) 2026 Tom Schmitt
+ * All rights reserved.
+ *
+ */
+
 #ifndef GENERIC_TYPE_H
 #define GENERIC_TYPE_H
 
