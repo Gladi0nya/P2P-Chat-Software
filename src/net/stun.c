@@ -3,9 +3,8 @@
  * @brief STUN (Session Traversal Utilities for NAT) module
  *
  * @author Tom Schmitt
- * @author Augustin Barniet
  *
- * Copyright (c) 2026 Tom Schmitt, Augustin Barniet
+ * Copyright (c) 2026 Tom Schmitt
  * All rights reserved.
  *
  */
@@ -19,7 +18,7 @@
 
 #include <stdio.h>
 #include <string.h>
-
+ 
 #include <errno.h>
 
 #include <unistd.h>
@@ -156,14 +155,13 @@ static int extract_xor_mapped_address(const uint8_t* response, size_t recv_len,
 
 static int stun_request(int sock, const struct sockaddr_in* const restrict dest) {
   stun_packet_t    request     = { 0 };
-  size_t           request_len = 20; // header only
 
   request.msg_type     = htons(STUN_BINDING_REQUEST);
   request.magic_cookie = htonl(STUN_MAGIC_COOKIE);
 
   generate_transaction_id(request.transaction_id);
 
-  if (sendto(sock, &request, request_len, 0,
+  if (sendto(sock, &request, sizeof(request), 0,
 	     (const struct sockaddr*)dest, sizeof(struct sockaddr_in)) < 0) {
     LOG_ERROR("sendto() failed.");
 
@@ -188,11 +186,12 @@ static int stun_request(int sock, const struct sockaddr_in* const restrict dest)
 
 static int stun_receive(int sock, uint8_t* response, size_t* recv_len) {
   struct sockaddr_in from_addr;
+  struct timeval tv  = {TIMEOUT_SEC, 0};
+
   uint32_t cookie;
   uint16_t resp_type;
   ssize_t sent;
   socklen_t from_len = sizeof(from_addr);
-  struct timeval tv  = {TIMEOUT_SEC, 0};
 
   setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 

@@ -1,9 +1,32 @@
+/**
+ * @file host.c
+ * @brief Host conversion utilities
+ *
+ * @author Tom Schmitt
+ *
+ * Copyright (c) 2026 Tom Schmitt
+ * All rights reserved.
+ *
+ */
+
 #include "host.h"
 
-#include <stddef.h>
 #include <string.h>
 
 #include <netdb.h>
+
+
+/** ----------------------------------------------------------- *
+  *  resolve_domain                                             *
+  *                                                             *
+  *  Convert domain name server into public IP.                 *
+  *                                                             *
+  *  @param hostname  [in] Domain name server.                  *
+  *  @param out_addr [out] Public IP address.                   *
+  *                                                             *
+  *  @retval 0 Host conversion successful.                      *
+  *  @retval 1 Host comversion failed.                          *
+  * ----------------------------------------------------------- **/
 
 int resolve_domain(const char* const restrict hostname, struct sockaddr_in* out_addr) {
   struct addrinfo hints = {0};

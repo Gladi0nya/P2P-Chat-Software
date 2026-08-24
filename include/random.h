@@ -1,3 +1,14 @@
+/**
+ * @file  random.h
+ * @brief Random header
+ *
+ * @author Tom Schmitt
+ *
+ * Copyright (c) 2026 Tom Schmitt
+ * All rights reserved.
+ *
+ */
+
 #ifndef RANDOM_H
 #define RANDOM_H
 

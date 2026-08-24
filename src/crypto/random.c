@@ -1,3 +1,14 @@
+/**
+ * @file  random.c
+ * @brief Random number generation module
+ *
+ * @author Tom Schmitt
+ *
+ * Copyright (c) 2026 Tom Schmitt
+ * All rights reserved.
+ *
+ */
+
 #include "random.h"
 
 #include <immintrin.h>

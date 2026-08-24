@@ -1,3 +1,14 @@
+/**
+ * @file  host.h
+ * @brief Host header
+ *
+ * @author Tom Schmitt
+ *
+ * Copyright (c) 2026 Tom Schmitt
+ * All rights reserved.
+ *
+ */
+
 #ifndef HOST_H
 #define HOST_H
 

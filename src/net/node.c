@@ -1,13 +1,28 @@
+/**
+ * @file node.c
+ * @brief Client node
+ *
+ * @author Tom Schmitt
+ *
+ * Copyright (c) 2026 Tom Schmitt
+ * All rights reserved.
+ *
+ */
+
 #define _POSIX_C_SOURCE 200809L
 #define _GNU_SOURCE
 
 #include "node.h"
 #include "logger.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include <unistd.h>
+
 #include <time.h>
+
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <errno.h>
@@ -106,7 +121,7 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
         
         struct timespec ts = {
             .tv_sec = 0,
-            .tv_nsec = 1000
+            .tv_nsec = 20000000
         };
         nanosleep(&ts, NULL);
     }
