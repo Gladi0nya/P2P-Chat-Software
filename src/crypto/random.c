@@ -7,6 +7,12 @@
  * Copyright (c) 2026 Tom Schmitt
  * All rights reserved.
  *
+ *
+ * TODO:
+ *   - x86 intrinsics detection
+ *   - ARM intrinsics function + detection
+ *   - RISCV intrinsics function + detection
+ *   - PPC intrinsics function + detection 
  */
 
 #include "random.h"
