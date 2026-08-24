@@ -10,10 +10,7 @@
  *
  */
 
-#include "generic_type.h"
-
 #include <stdint.h>
-#include <stdio.h>
 
 extern uint8_t bootstrap_run(void);
 
@@ -25,15 +22,14 @@ extern uint8_t bootstrap_run(void);
   *  @param argc Number of program arguments                    *
   *  @param argv Program arguments                              *
   *                                                             *
-  *  @retval 0 Successfully initialized.                        *
-  *  @retval 1 Failed to initialized.                           *
+  *  @retval 0 Program ran without errors.                      *
+  *  @retval 1 Program ran into an error.                       *
   * ----------------------------------------------------------- **/
 
 int main(int argc, char **argv)
 {
   (void)argc; // Remove compiler warnings (might add program arguments later)
   (void)argv;
-
   
   return bootstrap_run();
 }

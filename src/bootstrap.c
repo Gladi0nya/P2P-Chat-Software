@@ -22,6 +22,18 @@
 
 #include <arpa/inet.h>
 
+/** ----------------------------------------------------------- *
+  *  bootstrap_run                                              *
+  *                                                             *
+  *  Entry point of the bootstrap module.                       *
+  *                                                             *
+  *  @param argc Number of program arguments                    *
+  *  @param argv Program arguments                              *
+  *                                                             *
+  *  @retval 0 Successfully initialized.                        *
+  *  @retval 1 Failed to initialized.                           *
+  * ----------------------------------------------------------- **/
+
 uint8_t bootstrap_run(void)
 {
   if (log_init())

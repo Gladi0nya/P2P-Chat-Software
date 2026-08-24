@@ -10,3 +10,5 @@
 - [ ] GUI Interface
 - [ ] Paranoia mode (anti-nmap), shared anti ddos service across network
 - [ ] Administrator system
+- [ ] Video + voice call
+- [ ] Segmented list pour la gestion des messages

@@ -28,9 +28,10 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
-#define DEFAULT_PORT 12345
-#define TIMEOUT_SEC      3
-#define PASS_COUNT       2
+#define DEFAULT_PORT  12345
+#define TIMEOUT_SEC       3
+#define PASS_COUNT        2
+#define STUN_SERVER_COUNT 6
 
 #define STUN_MAGIC_COOKIE       0x2112A442
 
@@ -40,6 +41,8 @@
 
 #define STUN_XOR_MAPPED_ADDRESS 0x0020
 
+// Structure for STUN packets
+
 struct STUN_PACKET {
   uint16_t msg_type;
   uint16_t msg_len;
@@ -47,16 +50,22 @@ struct STUN_PACKET {
   uint32_t transaction_id[3];
 };
 
+// STUN packet type
+
 typedef struct STUN_PACKET stun_packet_t;
 
-#define STUN_SERVER_COUNT 6
+// Structure for STUN hosts
 
 struct STUN_HOST {
   char*    hostname;
   uint16_t     port;
 };
 
+// STUN host type
+
 typedef struct STUN_HOST stun_host_t;
+
+// Array of STUN servers
 
 static const stun_host_t STUN_SERVERS[] = {
   {"stun.l.google.com", 19302},
@@ -67,6 +76,15 @@ static const stun_host_t STUN_SERVERS[] = {
   {"stun4.l.google.com", 19302},
 };
 
+/** ----------------------------------------------------------- *
+  *  generate_transaction_id                                    *
+  *                                                             *
+  *  Built 96 bytes of random data for STUN transaction id.     *
+  *                                                             *
+  *  @param transaction_id [out] Byte pointer to write random   *
+  *                              data.                          *
+  * ----------------------------------------------------------- **/
+
 static inline void generate_transaction_id(uint32_t* const restrict transaction_id)
 {
   transaction_id[0] = rnd32();
@@ -74,6 +92,19 @@ static inline void generate_transaction_id(uint32_t* const restrict transaction_
   transaction_id[2] = rnd32();
 }
 
+/** ----------------------------------------------------------- *
+  *  extract_xor_mapped_address                                 *
+  *                                                             *
+  *  Extract client address from STUN response.                 *
+  *                                                             *
+  *  @param response [in] STUN response data.                   *
+  *  @param recv_len [in] STUN response length.                 *
+  *  @param ip      [out] Client Public IP found.               *
+  *  @param port    [out] Client Public PORT found.             *
+  *                                                             *
+  *  @retval 0 Public address found in the response.            *
+  *  @retval 1 No address found in the response.                *
+  * ----------------------------------------------------------- **/
 
 static int extract_xor_mapped_address(const uint8_t* response, size_t recv_len,
                                       uint32_t* ip, uint16_t* port) {
@@ -111,6 +142,18 @@ static int extract_xor_mapped_address(const uint8_t* response, size_t recv_len,
     return found ? 0 : 1;
 }
 
+/** ----------------------------------------------------------- *
+  *  stun_request                                               *
+  *                                                             *
+  *  Send a request to a STUN server.                           *
+  *                                                             *
+  *  @param sock        [in] network socket.                    *
+  *  @param sockaddr_in [in] destination address.               *
+  *                                                             *
+  *  @retval 0 Request sent.                                    *
+  *  @retval 1 Request not sent due to error.                   *
+  * ----------------------------------------------------------- **/
+
 static int stun_request(int sock, const struct sockaddr_in* const restrict dest) {
   stun_packet_t    request     = { 0 };
   size_t           request_len = 20; // header only
@@ -130,8 +173,20 @@ static int stun_request(int sock, const struct sockaddr_in* const restrict dest)
   return 0;
 }
 
-static int stun_receive(int sock, uint8_t* response, size_t* recv_len,
-			uint16_t expected_type) {
+/** ----------------------------------------------------------- *
+  *  stun_receive                                               *
+  *                                                             *
+  *  Receive STUN response from socket.                         *
+  *                                                             *
+  *  @param sock          [in] network socket.                  *
+  *  @param response     [out] buffer to store response.        *
+  *  @param recv_len     [out] Length of the response.          *
+  *                                                             *
+  *  @retval 0 Response received.                               *
+  *  @retval 1 Failed to retrieve the response.                 *
+  * ----------------------------------------------------------- **/
+
+static int stun_receive(int sock, uint8_t* response, size_t* recv_len) {
   struct sockaddr_in from_addr;
   uint32_t cookie;
   uint16_t resp_type;
@@ -169,13 +224,26 @@ static int stun_receive(int sock, uint8_t* response, size_t* recv_len,
   }
     
   resp_type = ntohs(*(uint16_t*)&response[0]);
-  if (resp_type != expected_type) {
+  if (resp_type != STUN_BINDING_SUCCESS) {
     LOG_ERROR("Unexpected response type.");
     return 1;
   }
     
   return 0;
 }
+
+/** ----------------------------------------------------------- *
+  *  stun_bind_sock                                             *
+  *                                                             *
+  *  Create a socket, bind it to local address, and retrieve    *
+  *  public informations using STUN servers.                    *
+  *                                                             *
+  *  @param socket   [out] socket to be created.                *
+  *  @param pub_addr [out] Public address.                      *
+  *                                                             *
+  *  @retval 0 Succesfull STUN detection.                       *
+  *  @retval 1 STUN detection ran into an error.                *
+  * ----------------------------------------------------------- **/
 
 int stun_bind_sock(int* sock, addr_t* pub_addr)
 {
@@ -224,8 +292,6 @@ int stun_bind_sock(int* sock, addr_t* pub_addr)
 
   LOG_INFO("STUN server ip resolved.");
 
-  //printf("IP: %s\n", inet_ntoa(server_addr.sin_addr));
-
   server_addr.sin_family = AF_INET;
   server_addr.sin_port   = htons(STUN_SERVERS[pass].port);
   
@@ -238,7 +304,7 @@ int stun_bind_sock(int* sock, addr_t* pub_addr)
 
   LOG_INFO("BINDING request sent.");
   
-  if (stun_receive(*sock, response, &recv_len, STUN_BINDING_SUCCESS)) {
+  if (stun_receive(*sock, response, &recv_len)) {
     LOG_ERROR("stun_receive() failed.");
 
     close(*sock);
