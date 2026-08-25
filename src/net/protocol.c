@@ -9,22 +9,28 @@ enum OPCODE {
   OP_PING,
   OP_PONG,
   OP_DATA,
-  OP_DISCONNECT
+  OP_DISCONNECT,
+  OP_VERSION,
+  OP_ASK_UPDATE,
+  OP_SEND_UPDATE,
+  PARANOIA_ANTIHACK
 };
 
 typedef enum opcode_t;
 
-enum MSG_TYPE {
-  PARANOIA_ANTIHACK,
-  MSG_DATA,
-  MUSIC_DATA,
-  AUDIO_DATA,
-  VIDEO_DATA
+enum DATA_TYPE {
+  DATA_RAW,
+  DATA_EXEC,
+  DATA_UPDATE,
+  DATA_MUSIC,
+  DATA_AUDIO,
+  DATA_VIDEO
 };
 
 typedef enum msg_type_t;
 
 struct P2P_PACKET {
+  uint8_t     certificate[];
   op_code_t          opcode;
   uint32_t         data_len;
   uint8_t            data[];
