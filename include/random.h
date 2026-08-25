@@ -14,8 +14,8 @@
 
 #include <stdint.h>
 
-uint8_t  rnd8(void);
-uint16_t rnd16(void);
-uint32_t rnd32(void);
-uint64_t rnd64(void);
+int  rnds8(uint8_t* const restrict u8);
+int rnds16(uint16_t* const restrict u16);
+int rnds32(uint32_t* const restrict u32);
+int rnds64(uint64_t* const restrict u64);
 #endif

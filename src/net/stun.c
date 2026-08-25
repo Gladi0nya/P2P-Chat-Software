@@ -23,6 +23,8 @@
 
 #include <unistd.h>
 
+#include <netdb.h>
+
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -76,19 +78,47 @@ static const stun_host_t STUN_SERVERS[] = {
 };
 
 /** ----------------------------------------------------------- *
+  *  resolve_domain                                             *
+  *                                                             *
+  *  Convert domain name server into public IP.                 *
+  *                                                             *
+  *  @param hostname  [in] Domain name server.                  *
+  *  @param out_addr [out] Public IP address.                   *
+  *                                                             *
+  *  @retval 0 Host conversion successful.                      *
+  *  @retval 1 Host comversion failed.                          *
+  * ----------------------------------------------------------- **/
+
+int resolve_domain(const char* const restrict hostname, struct sockaddr_in* out_addr) {
+  struct addrinfo hints = {0};
+  struct addrinfo* result;
+  
+  hints.ai_family   = AF_INET;
+  hints.ai_socktype = SOCK_DGRAM;
+
+  if (getaddrinfo(hostname, NULL, &hints, &result) != 0) return 1;
+
+  memcpy(out_addr, result->ai_addr, sizeof(struct sockaddr_in));
+  
+  freeaddrinfo(result);
+  
+  return 0;
+}
+
+/** ----------------------------------------------------------- *
   *  generate_transaction_id                                    *
   *                                                             *
   *  Built 96 bytes of random data for STUN transaction id.     *
   *                                                             *
-  *  @param transaction_id [out] Byte pointer to write random   *
-  *                              data.                          *
+  *  @param transaction_id [out] Byte to write random data.     *
+  *                                                             *
+  *  @retval 0 Succesfully generated.                           *
+  *  @retval 1 RNG failed.                                      * 
   * ----------------------------------------------------------- **/
 
-static inline void generate_transaction_id(uint32_t* const restrict transaction_id)
+static inline int generate_transaction_id(uint32_t* const restrict transaction_id)
 {
-  transaction_id[0] = rnd32();
-  transaction_id[1] = rnd32();
-  transaction_id[2] = rnd32();
+  return rnds32(&transaction_id[0]) & rnds32(&transaction_id[1]) & rnds32(&transaction_id[2]);
 }
 
 /** ----------------------------------------------------------- *
@@ -105,8 +135,8 @@ static inline void generate_transaction_id(uint32_t* const restrict transaction_
   *  @retval 1 No address found in the response.                *
   * ----------------------------------------------------------- **/
 
-static int extract_xor_mapped_address(const uint8_t* response, size_t recv_len,
-                                      uint32_t* ip, uint16_t* port) {
+static int extract_xor_mapped_address(const uint8_t* const restrict response, const size_t recv_len,
+                                      uint32_t* const restrict ip, uint16_t* const restrict port) {
     uint16_t msg_len = ntohs(*(uint16_t*)&response[2]);
     size_t offset    = 20;
     int found        = 0;
@@ -159,11 +189,14 @@ static int stun_request(int sock, const struct sockaddr_in* const restrict dest)
   request.msg_type     = htons(STUN_BINDING_REQUEST);
   request.magic_cookie = htonl(STUN_MAGIC_COOKIE);
 
-  generate_transaction_id(request.transaction_id);
+  if (generate_transaction_id(request.transaction_id)) {
+      LOG_DEBUG("generate_transaction_id failed().");
+      return 1;
+  }
 
   if (sendto(sock, &request, sizeof(request), 0,
 	     (const struct sockaddr*)dest, sizeof(struct sockaddr_in)) < 0) {
-    LOG_ERROR("sendto() failed.");
+    LOG_DEBUG("sendto() failed.");
 
     return 1;
   }
@@ -184,7 +217,7 @@ static int stun_request(int sock, const struct sockaddr_in* const restrict dest)
   *  @retval 1 Failed to retrieve the response.                 *
   * ----------------------------------------------------------- **/
 
-static int stun_receive(int sock, uint8_t* response, size_t* recv_len) {
+static int stun_receive(const int sock, uint8_t* const restrict response, size_t* const restrict recv_len) {
   struct sockaddr_in from_addr;
   struct timeval tv  = {TIMEOUT_SEC, 0};
 
@@ -201,7 +234,7 @@ static int stun_receive(int sock, uint8_t* response, size_t* recv_len) {
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
       LOG_ERROR("Timeout waiting for STUN response");
     } else {
-      LOG_ERROR("recvfrom() failed.");
+      LOG_DEBUG("recvfrom() failed.");
     }
     
     return 1;
@@ -244,7 +277,7 @@ static int stun_receive(int sock, uint8_t* response, size_t* recv_len) {
   *  @retval 1 STUN detection ran into an error.                *
   * ----------------------------------------------------------- **/
 
-int stun_bind_sock(int* sock, addr_t* pub_addr)
+int stun_bind_sock(int* const restrict sock, addr_t* const restrict pub_addr)
 {
   uint8_t pass = 0;
   struct sockaddr_in server_addr, local_addr;
@@ -254,7 +287,7 @@ int stun_bind_sock(int* sock, addr_t* pub_addr)
   addr_t pub[2];
 
   if ((*sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-    LOG_ERROR("Socket creation error.");
+    LOG_DEBUG("socket() failed.");
 
     return 1;
   }           
@@ -269,48 +302,48 @@ int stun_bind_sock(int* sock, addr_t* pub_addr)
     local_addr.sin_port = htons(pub_addr->port);
   
   if (bind(*sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
-    LOG_ERROR("bind() failed.");
+    LOG_DEBUG("bind() failed.");
 
     close(*sock);
     return 1;
   }
 
-  LOG_INFO("ip, port bound to socket.");
+  LOG_INFO("Localhost socket-bound.");
   
   next_pass:
   if (resolve_domain(STUN_SERVERS[pass].hostname, &server_addr)) {
-    LOG_ERROR("resolve_domain() failed.");
+    LOG_DEBUG("resolve_domain() failed.");
     
     if (++pass == STUN_SERVER_COUNT) {
-      LOG_ERROR("No stun host working. Aborting.");
+      LOG_ERROR("No stun host up.");
       return 1;
     }
     
     goto next_pass;
   }
 
-  LOG_INFO("STUN server ip resolved.");
+  LOG_DEBUG("STUN server ip resolved.");
 
   server_addr.sin_family = AF_INET;
   server_addr.sin_port   = htons(STUN_SERVERS[pass].port);
   
   if (stun_request(*sock, &server_addr)) {
-    LOG_ERROR("stun_request() failed.");
+    LOG_DEBUG("stun_request() failed.");
 
     close(*sock);
     return 1;
   }
 
-  LOG_INFO("BINDING request sent.");
+  LOG_DEBUG("BINDING request sent.");
   
   if (stun_receive(*sock, response, &recv_len)) {
-    LOG_ERROR("stun_receive() failed.");
+    LOG_DEBUG("stun_receive() failed.");
 
     close(*sock);
     return 1;
   }
 
-  LOG_INFO("BINDING response received.");
+  LOG_DEBUG("BINDING response received.");
 
   if (extract_xor_mapped_address(response, recv_len, &pub[pass].ip, &pub[pass].port)) {
     LOG_ERROR("Failed to extract XOR-MAPPED-ADDRESS from Test 1");
@@ -330,7 +363,7 @@ int stun_bind_sock(int* sock, addr_t* pub_addr)
   pub_addr->ip   = pub[0].ip;
   pub_addr->port = pub[0].port;
 
-  LOG_DEBUG("Friendly P2P NAT detected.");
+  LOG_INFO("Friendly P2P NAT detected.");
   
   return 0;
 }

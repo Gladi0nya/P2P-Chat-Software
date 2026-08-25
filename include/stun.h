@@ -14,12 +14,7 @@
 
 #define _POSIX_C_SOURCE 200809L 
 
-struct ADDR {
-  uint32_t ip;
-  uint16_t port;
-};
-
-typedef struct ADDR addr_t;
+#include "net_type.h"
 
 int stun_bind_sock(int* sock, addr_t* pub_addr);
 #endif

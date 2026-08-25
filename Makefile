@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-c -Wall -Wextra -Wrestrict -pedantic -std=c2x -march=native -Iinclude/ 
 LDFLAGS=
-OBJ=build/entry.o build/bootstrap.o build/logger.o build/node.o build/stun.o build/host.o build/random.o
+OBJ=build/entry.o build/bootstrap.o build/logger.o build/net.o build/node.o build/stun.o build/random.o 
 EXEC=build/client
 
 .PHONY: all clean run mkdir
@@ -26,11 +26,11 @@ build/random.o: src/crypto/random.c
 build/stun.o: src/net/stun.c
 	$(CC) $(CFLAGS) src/net/stun.c -o build/stun.o
 
-build/host.o: src/net/host.c
-	$(CC) $(CFLAGS) src/net/host.c -o build/host.o
-
 build/node.o: src/net/node.c
 	$(CC) $(CFLAGS) src/net/node.c -o build/node.o
+
+build/net.o: src/net/net.c
+	$(CC) $(CFLAGS) src/net/net.c -o build/net.o
 
 $(EXEC): mkdir $(OBJ)
 	$(CC) $(OBJ) -o $(EXEC) $(LDFLAGS)

@@ -25,11 +25,26 @@
 
 #include <arm_acle.h>
 
+#else
+
+#include <sys/random.h>
+
 #endif
 
-static uint64_t rand64;
+static uint64_t rand64 = 0ULL;
 
-uint8_t rnd8(void)
+/** ----------------------------------------------------------- *
+  *  rnds8                                                      *
+  *                                                             *
+  *  Generate crypto-secure 1 byte random number.               *
+  *                                                             *
+  *  @param u8 [out] Random number.                             *
+  *                                                             *
+  *  @retval 0 Program ran without errors.                      *
+  *  @retval 1 Program ran into an error.                       *
+  * ----------------------------------------------------------- **/
+
+int rnds8(uint8_t* const restrict u8)
 {
   rand64 >>= 8;
 
@@ -38,16 +53,32 @@ uint8_t rnd8(void)
     _rdrand64_step((unsigned long long*)&rand64); 
 
     #elif defined(__ARM_FEATURE_RNG)
-
     __rndr((unsigned long long*)&rand64); // Might consider using rndrrs
+
+    #else
+    if (getrandom(&rand64, sizeof(uint64_t), 0) != sizeof (uint64_t))
+      return 1;
     
     #endif
   }
+
+  *u8 = (uint8_t)(rand64 & 0xFF);
   
-  return (rand64 & 0xFF);
+  return 0;
 }
 
-uint16_t rnd16(void)
+/** ----------------------------------------------------------- *
+  *  rnds16                                                     *
+  *                                                             *
+  *  Generate crypto-secure 2 bytes random number.              *
+  *                                                             *
+  *  @param u16 [out] Random number.                            *
+  *                                                             *
+  *  @retval 0 Program ran without errors.                      *
+  *  @retval 1 Program ran into an error.                       *
+  * ----------------------------------------------------------- **/
+
+int rnds16(uint16_t* const restrict u16)
 {
   rand64 >>= 16;
 
@@ -56,16 +87,31 @@ uint16_t rnd16(void)
     _rdrand64_step((unsigned long long*)&rand64); 
 
     #elif defined(__ARM_FEATURE_RNG)
-
     __rndr((unsigned long long*)&rand64); // Might consider using rndrrs
-    
+
+    #else
+    if (getrandom(&rand64, sizeof(uint64_t), 0) != sizeof(uint64_t))
+      return 1;
     #endif
   }
   
-  return (rand64 & 0xFFFF);
+  *u16 = (rand64 & 0xFFFF);
+
+  return 0;
 }
 
-uint32_t rnd32(void)
+/** ----------------------------------------------------------- *
+  *  rnds32                                                      *
+  *                                                             *
+  *  Generate crypto-secure 4 byte random number.               *
+  *                                                             *
+  *  @param u32 [out] Random number.                            *
+  *                                                             *
+  *  @retval 0 Program ran without errors.                      *
+  *  @retval 1 Program ran into an error.                       *
+  * ----------------------------------------------------------- **/
+
+int rnds32(uint32_t* const restrict u32)
 {
   rand64 >>= 32;
 
@@ -74,16 +120,31 @@ uint32_t rnd32(void)
     _rdrand64_step((unsigned long long*)&rand64); 
 
     #elif defined(__ARM_FEATURE_RNG)
-
     __rndr((unsigned long long*)&rand64); // Might consider using rndrrs
-    
+
+    #else
+    if (getrandom(&rand64, sizeof(uint64_t), 0) != sizeof(uint64_t))
+      return 1;
     #endif
   }
+
+  *u32 = (rand64 & 0xFFFFFFFF);
   
-  return (rand64 & 0xFFFFFFFF);
+  return 0;
 }
 
-uint64_t rnd64(void)
+/** ----------------------------------------------------------- *
+  *  rnds64                                                     *
+  *                                                             *
+  *  Generate crypto-secure 8 bytes random number.              *
+  *                                                             *
+  *  @param u64 [out] Random number.                            *
+  *                                                             *
+  *  @retval 0 Program ran without errors.                      *
+  *  @retval 1 Program ran into an error.                       *
+  * ----------------------------------------------------------- **/
+
+int rnds64(uint64_t* const restrict u64)
 {
 
   #ifdef __RDRND__
@@ -91,8 +152,14 @@ uint64_t rnd64(void)
 
   #elif defined(__ARM_FEATURE_RNG)
   __rndr((unsigned long long*)&rand64); // Might consider using rndrrs
-    
-  #endif
+
+  #else
+  if (getrandom(&rand64, sizeof(uint64_t), 0) != sizeof(uint64_t))
+    return 1;
   
-  return rand64;
+  #endif
+
+  *u64 = rand64;
+
+  return 0;
 }

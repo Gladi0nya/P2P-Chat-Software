@@ -13,7 +13,7 @@
 #define NODE_H
 #include <stdint.h>
 
-#include "stun.h"
+#include "net_type.h"
 
 uint8_t CreateChannelForPeer(int sock, addr_t peer_addr);
 
