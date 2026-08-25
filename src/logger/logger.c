@@ -13,6 +13,7 @@
 #include "logger.h"
 #include "generic_type.h"
 
+#include <inttypes.h>
 #include <stdio.h>
 
 #include <time.h>
@@ -121,9 +122,9 @@ uint8_t log_write(const uint8_t level, const char* const restrict filename, cons
   if (!isInit) return 1;
 
   #ifdef LOGFILE
-  fprintf(OUT, "%015.9Lf %s %s [%s:%llu]\n", (float80_t)log_time(), LEVEL_NAME[level], msg, filename, line);
+  fprintf(OUT, "%015.9Lf %s %s [%s:%" PRIu64 "]\n", (float80_t)log_time(), LEVEL_NAME[level], msg, filename, line);
   #else
-  fprintf(OUT, "%015.9Lf %s%s\033[0m - %s [%s:%llu]\n", (float80_t)log_time(), LEVEL_COLOR[level], LEVEL_NAME[level], msg, filename, line);
+  fprintf(OUT, "%015.9Lf %s%s\033[0m - %s [%s:%" PRIu64 "]\n", (float80_t)log_time(), LEVEL_COLOR[level], LEVEL_NAME[level], msg, filename, line);
   #endif
 
   return 0;
