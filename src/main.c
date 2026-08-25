@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 
-extern uint8_t bootstrap_run(void);
+extern int bootstrap_run(void);
 
 /** ----------------------------------------------------------- *
   *  main                                                       *

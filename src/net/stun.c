@@ -9,8 +9,8 @@
  *
  */
 
-#include "host.h"
 #include "stun.h"
+#include "net_helper.h"
 
 #include "random.h"
 
@@ -22,8 +22,6 @@
 #include <errno.h>
 
 #include <unistd.h>
-
-#include <netdb.h>
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -78,34 +76,6 @@ static const stun_host_t STUN_SERVERS[] = {
 };
 
 /** ----------------------------------------------------------- *
-  *  resolve_domain                                             *
-  *                                                             *
-  *  Convert domain name server into public IP.                 *
-  *                                                             *
-  *  @param hostname  [in] Domain name server.                  *
-  *  @param out_addr [out] Public IP address.                   *
-  *                                                             *
-  *  @retval 0 Host conversion successful.                      *
-  *  @retval 1 Host comversion failed.                          *
-  * ----------------------------------------------------------- **/
-
-int resolve_domain(const char* const restrict hostname, struct sockaddr_in* out_addr) {
-  struct addrinfo hints = {0};
-  struct addrinfo* result;
-  
-  hints.ai_family   = AF_INET;
-  hints.ai_socktype = SOCK_DGRAM;
-
-  if (getaddrinfo(hostname, NULL, &hints, &result) != 0) return 1;
-
-  memcpy(out_addr, result->ai_addr, sizeof(struct sockaddr_in));
-  
-  freeaddrinfo(result);
-  
-  return 0;
-}
-
-/** ----------------------------------------------------------- *
   *  generate_transaction_id                                    *
   *                                                             *
   *  Built 96 bytes of random data for STUN transaction id.     *
@@ -152,13 +122,18 @@ static int extract_xor_mapped_address(const uint8_t* const restrict response, co
             // Skip first byte (reserved) and the second (family)                                                                                                                                   
             offset += 2;
 
-            // Port (16 bits XOR with highest bits of Magic Cookie)                                                                                                                                 
-            *port = ntohs(*(uint16_t*)&response[offset]) ^ (STUN_MAGIC_COOKIE >> 16);
-            offset += 2;
+            // Port (16 bits XOR with highest bits of Magic Cookie)
+
+	    if (port)
+	      *port = ntohs(*(uint16_t*)&response[offset]) ^ (STUN_MAGIC_COOKIE >> 16);
+
+	    offset += 2;
 
             // IP (XOR with full Magic Cookie)                                                                                                                                                      
-            *ip = *(uint32_t*)&response[offset] ^ htonl(STUN_MAGIC_COOKIE);
-            offset += 4;
+            if (ip)
+	      *ip = *(uint32_t*)&response[offset] ^ htonl(STUN_MAGIC_COOKIE);
+
+	    offset += 4;
 
             found = 1;
             break;
@@ -264,47 +239,128 @@ static int stun_receive(const int sock, uint8_t* const restrict response, size_t
   return 0;
 }
 
-/** ----------------------------------------------------------- *
-  *  stun_bind_sock                                             *
-  *                                                             *
-  *  Create a socket, bind it to local address, and retrieve    *
-  *  public informations using STUN servers.                    *
-  *                                                             *
-  *  @param socket   [out] socket to be created.                *
-  *  @param pub_addr [out] Public address.                      *
-  *                                                             *
-  *  @retval 0 Succesfull STUN detection.                       *
-  *  @retval 1 STUN detection ran into an error.                *
-  * ----------------------------------------------------------- **/
-
-int stun_bind_sock(int* const restrict sock, addr_t* const restrict pub_addr)
-{
+int stun_check(uint32_t* const restrict pub_ip) {
   uint8_t pass = 0;
+  int sock    = -1;
+
   struct sockaddr_in server_addr, local_addr;
-  
+
   uint8_t response[1024];
   size_t recv_len;
   addr_t pub[2];
-
-  if ((*sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-    LOG_DEBUG("socket() failed.");
+  
+  if (net_socket_create(&sock, SOCK_DGRAM)) {
+    LOG_DEBUG("net_socket_create() failed.");
 
     return 1;
-  }           
+  }
 
   memset(&local_addr, 0, sizeof(local_addr));
   local_addr.sin_family = AF_INET;              
   local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  local_addr.sin_port = htons(0);
+  
+  if (bind(sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
+    LOG_DEBUG("bind() failed.");
 
-  if (pub_addr->port < 1001)
+    net_socket_close(&sock);
+    return 1;
+  }
+
+  LOG_INFO("Localhost socket-bound.");
+
+  
+  next_pass:
+  if (resolve_domain(STUN_SERVERS[pass].hostname, &server_addr)) {
+    LOG_DEBUG("resolve_domain() failed.");
+    
+    if (++pass == STUN_SERVER_COUNT) {
+      LOG_ERROR("No stun host up.");
+
+      net_socket_close(&sock);
+      return 1;
+    }
+    
+    goto next_pass;
+  }
+
+  LOG_DEBUG("STUN server ip resolved.");
+
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_port   = htons(STUN_SERVERS[pass].port);
+  
+  if (stun_request(sock, &server_addr)) {
+    LOG_DEBUG("stun_request() failed.");
+
+    net_socket_close(&sock);
+    return 1;
+  }
+
+  LOG_DEBUG("BINDING request sent.");
+  
+  if (stun_receive(sock, response, &recv_len)) {
+    LOG_DEBUG("stun_receive() failed.");
+
+    net_socket_close(&sock);
+    return 1;
+  }
+
+  LOG_DEBUG("BINDING response received.");
+
+  if (extract_xor_mapped_address(response, recv_len, &pub[pass].ip, &pub[pass].port)) {
+    LOG_ERROR("Failed to extract XOR-MAPPED-ADDRESS.");
+
+    net_socket_close(&sock);
+    return 1;
+  }
+
+  if (++pass < PASS_COUNT) goto next_pass;
+ 
+  if (memcmp(&pub[0], &pub[1], sizeof(addr_t))) {
+    LOG_WARNING("Detected public IP change.");
+
+    net_socket_close(&sock);
+    return 1;
+  }
+
+  *pub_ip = pub[0].ip;
+
+  LOG_INFO("Friendly P2P NAT detected.");
+
+  return 0;
+}
+
+/** ----------------------------------------------------------- *
+  *  stun_bind_sock                                             *
+  *                                                             *
+  *  Bind a socket and retrieve public port.                    *
+  *                                                             *
+  *  @param socket   [out] socket to be created.                *
+  *  @param pub_port [out] Public port.                         *
+  *                                                             *
+  *  @retval 0 Succesfull binding.                              *
+  *  @retval 1 Error.                                           *
+  * ----------------------------------------------------------- **/
+
+int stun_bind_sock(int* const restrict sock, uint16_t* const restrict pub_port)
+{
+  uint8_t pass = 0;
+  struct sockaddr_in server_addr, local_addr;
+  uint8_t response[1024];
+  size_t recv_len;
+  
+  memset(&local_addr, 0, sizeof(local_addr));
+  local_addr.sin_family = AF_INET;              
+  local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+  if (*pub_port < 1001)
     local_addr.sin_port = htons(DEFAULT_PORT);
   else
-    local_addr.sin_port = htons(pub_addr->port);
+    local_addr.sin_port = htons(*pub_port);
   
   if (bind(*sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
     LOG_DEBUG("bind() failed.");
 
-    close(*sock);
     return 1;
   }
 
@@ -330,7 +386,6 @@ int stun_bind_sock(int* const restrict sock, addr_t* const restrict pub_addr)
   if (stun_request(*sock, &server_addr)) {
     LOG_DEBUG("stun_request() failed.");
 
-    close(*sock);
     return 1;
   }
 
@@ -339,31 +394,16 @@ int stun_bind_sock(int* const restrict sock, addr_t* const restrict pub_addr)
   if (stun_receive(*sock, response, &recv_len)) {
     LOG_DEBUG("stun_receive() failed.");
 
-    close(*sock);
     return 1;
   }
 
   LOG_DEBUG("BINDING response received.");
 
-  if (extract_xor_mapped_address(response, recv_len, &pub[pass].ip, &pub[pass].port)) {
+  if (extract_xor_mapped_address(response, recv_len, NULL, pub_port)) {
     LOG_ERROR("Failed to extract XOR-MAPPED-ADDRESS from Test 1");
 
-    close(*sock);
     return 1;
   }
-
-  if (++pass < PASS_COUNT) goto next_pass;
- 
-  if (memcmp(&pub[0], &pub[1], sizeof(addr_t))) {
-    LOG_WARNING("Detected public IP change. Aborting.\n");
-
-    return 1;
-  }
-
-  pub_addr->ip   = pub[0].ip;
-  pub_addr->port = pub[0].port;
-
-  LOG_INFO("Friendly P2P NAT detected.");
   
   return 0;
 }

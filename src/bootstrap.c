@@ -31,7 +31,7 @@
   *  @retval 1 Failed to initialized.                           *
   * ----------------------------------------------------------- **/
 
-uint8_t bootstrap_run(void)
+int bootstrap_run(void)
 {
   if (log_init())
   {
@@ -41,9 +41,38 @@ uint8_t bootstrap_run(void)
 
   LOG_INFO("Bootstrap started.");
 
-  net_init(9999);
+  if (net_init()) {
+    LOG_ERROR("Failed to initialized net module.");
+    goto exit;
+  }
 
-  char peer_ip[16], peer_port[9];
+  char peer_ip[16], peer_port[9], my_port[9];
+
+  printf("What port would you like to be listening to (Please provide higher than 1000, which are reserved): ");
+
+  fflush(stdout);
+  if (fgets(my_port, sizeof(my_port), stdin) != NULL) {
+    peer_port[strcspn(my_port, "\n")] = '\0';
+  } else {
+    LOG_ERROR("Input mismatch.");
+    goto exit;
+  }
+
+  net_connection_t net_conn;
+
+  if (net_create(&net_conn)) {
+    LOG_DEBUG("net_create() failed.");
+    LOG_ERROR("Failed to create net handle.");
+
+    goto exit;
+  }
+  
+  if (net_open(&net_conn, my_port)) {
+    LOG_DEBUG("net_open() failed.");
+    LOG_ERROR("Failed to open port.");
+
+    goto exit;
+  }
   
   printf("Enter Peer IP: ");
   fflush(stdout);
@@ -62,11 +91,12 @@ uint8_t bootstrap_run(void)
     LOG_ERROR("Input mismatch.");
     goto exit;
   }
-
-  net_create_chat(peer_ip, peer_port);
+  
+  if (net_connect(&net_conn, peer_ip, peer_port))
+    LOG_ERROR("Connection failed.");
+  
  
   exit:
-  net_shutdown();
   
   LOG_INFO("Bootstrap exit.");
   LOG_DEBUG("Logger shutdown.");

@@ -1,6 +1,8 @@
 #ifndef NET_TYPE_H
 #define NET_TYPE_H
 
+#include <stdint.h>
+
 struct ADDR {
   uint32_t ip;
   uint16_t port;
