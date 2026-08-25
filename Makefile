@@ -21,7 +21,7 @@ build/logger.o: src/logger/logger.c
 	$(CC) $(CFLAGS) src/logger/logger.c -o build/logger.o
 
 build/random.o: src/crypto/random.c
-	$(CC) $(CFLAGS) -mrdrnd src/crypto/random.c -o build/random.o
+	$(CC) $(CFLAGS) -march=native src/crypto/random.c -o build/random.o
 
 build/stun.o: src/net/stun.c
 	$(CC) $(CFLAGS) src/net/stun.c -o build/stun.o
