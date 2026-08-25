@@ -30,7 +30,7 @@
 #define DEFAULT_PORT  12345
 #define TIMEOUT_SEC       3
 #define PASS_COUNT        2
-#define STUN_SERVER_COUNT 6
+#define STUN_SERVER_COUNT 11
 
 #define STUN_MAGIC_COOKIE       0x2112A442
 
@@ -67,6 +67,8 @@ typedef struct STUN_HOST stun_host_t;
 // Array of STUN servers
 
 static const stun_host_t STUN_SERVERS[] = {
+  {"stun.miwifi.com", 3478},
+  {"stun.chat.bilibili.com", 3478},
   {"stun.l.google.com", 19302},
   {"stun.cloudflare.com", 3478},
   {"stun1.l.google.com", 3478},
