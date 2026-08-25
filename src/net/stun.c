@@ -28,7 +28,7 @@
 #include <sys/time.h>
 
 #define DEFAULT_PORT  12345
-#define TIMEOUT_SEC       3
+#define TIMEOUT_SEC       2
 #define PASS_COUNT        2
 #define STUN_SERVER_COUNT 11
 
@@ -68,6 +68,8 @@ typedef struct STUN_HOST stun_host_t;
 
 static const stun_host_t STUN_SERVERS[] = {
   {"stun.miwifi.com", 3478},
+  {"stun.sipthor.net", 3478},
+  {"stun.freeswitch.org", 3478},
   {"stun.chat.bilibili.com", 3478},
   {"stun.l.google.com", 19302},
   {"stun.cloudflare.com", 3478},
@@ -209,7 +211,7 @@ static int stun_receive(const int sock, uint8_t* const restrict response, size_t
 		      (struct sockaddr*)&from_addr, &from_len)) < 0) {
 
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
-      LOG_ERROR("Timeout waiting for STUN response");
+      LOG_WARNING("Timeout waiting for STUN response");
     } else {
       LOG_DEBUG("recvfrom() failed.");
     }
@@ -242,7 +244,7 @@ static int stun_receive(const int sock, uint8_t* const restrict response, size_t
 }
 
 int stun_check(uint32_t* const restrict pub_ip) {
-  uint8_t pass = 0;
+  uint8_t pass = 0, i_srv = 0;
   int sock    = -1;
 
   struct sockaddr_in server_addr, local_addr;
@@ -273,10 +275,10 @@ int stun_check(uint32_t* const restrict pub_ip) {
 
   
   next_pass:
-  if (resolve_domain(STUN_SERVERS[pass].hostname, &server_addr)) {
+  if (resolve_domain(STUN_SERVERS[i_srv].hostname, &server_addr)) {
     LOG_DEBUG("resolve_domain() failed.");
     
-    if (++pass == STUN_SERVER_COUNT) {
+    if (++i_srv == STUN_SERVER_COUNT) {
       LOG_ERROR("No stun host up.");
 
       net_socket_close(&sock);
@@ -289,7 +291,7 @@ int stun_check(uint32_t* const restrict pub_ip) {
   LOG_DEBUG("STUN server ip resolved.");
 
   server_addr.sin_family = AF_INET;
-  server_addr.sin_port   = htons(STUN_SERVERS[pass].port);
+  server_addr.sin_port   = htons(STUN_SERVERS[i_srv].port);
   
   if (stun_request(sock, &server_addr)) {
     LOG_DEBUG("stun_request() failed.");
@@ -303,8 +305,8 @@ int stun_check(uint32_t* const restrict pub_ip) {
   if (stun_receive(sock, response, &recv_len)) {
     LOG_DEBUG("stun_receive() failed.");
 
-    net_socket_close(&sock);
-    return 1;
+    i_srv++;
+    goto next_pass;
   }
 
   LOG_DEBUG("BINDING response received.");
@@ -316,8 +318,11 @@ int stun_check(uint32_t* const restrict pub_ip) {
     return 1;
   }
 
-  if (++pass < PASS_COUNT) goto next_pass;
- 
+  if (++pass < PASS_COUNT) {
+    i_srv++;
+    goto next_pass;
+  }
+  
   if (memcmp(&pub[0], &pub[1], sizeof(addr_t))) {
     LOG_WARNING("Detected public IP change.");
 
@@ -346,7 +351,7 @@ int stun_check(uint32_t* const restrict pub_ip) {
 
 int stun_bind_sock(int* const restrict sock, uint16_t* const restrict pub_port)
 {
-  uint8_t pass = 0;
+  uint8_t i_srv = 0;
   struct sockaddr_in server_addr, local_addr;
   uint8_t response[1024];
   size_t recv_len;
@@ -369,11 +374,11 @@ int stun_bind_sock(int* const restrict sock, uint16_t* const restrict pub_port)
   LOG_INFO("Localhost socket-bound.");
   
   next_pass:
-  if (resolve_domain(STUN_SERVERS[pass].hostname, &server_addr)) {
+  if (resolve_domain(STUN_SERVERS[i_srv].hostname, &server_addr)) {
     LOG_DEBUG("resolve_domain() failed.");
     
-    if (++pass == STUN_SERVER_COUNT) {
-      LOG_ERROR("No stun host up.");
+    if (++i_srv == STUN_SERVER_COUNT) {
+      LOG_ERROR("Not enough stun host up.");
       return 1;
     }
     
@@ -383,7 +388,7 @@ int stun_bind_sock(int* const restrict sock, uint16_t* const restrict pub_port)
   LOG_DEBUG("STUN server ip resolved.");
 
   server_addr.sin_family = AF_INET;
-  server_addr.sin_port   = htons(STUN_SERVERS[pass].port);
+  server_addr.sin_port   = htons(STUN_SERVERS[i_srv].port);
   
   if (stun_request(*sock, &server_addr)) {
     LOG_DEBUG("stun_request() failed.");
@@ -396,7 +401,8 @@ int stun_bind_sock(int* const restrict sock, uint16_t* const restrict pub_port)
   if (stun_receive(*sock, response, &recv_len)) {
     LOG_DEBUG("stun_receive() failed.");
 
-    return 1;
+    i_srv++;
+    goto next_pass;
   }
 
   LOG_DEBUG("BINDING response received.");
