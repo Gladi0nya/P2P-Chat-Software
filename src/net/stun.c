@@ -270,9 +270,6 @@ int stun_check(uint32_t* const restrict pub_ip) {
     net_socket_close(&sock);
     return 1;
   }
-
-  LOG_INFO("Localhost socket-bound.");
-
   
   next_pass:
   if (resolve_domain(STUN_SERVERS[i_srv].hostname, &server_addr)) {
