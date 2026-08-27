@@ -16,7 +16,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <stdarg.h>
 #include <time.h>
 
 //Debug mode is declared as turned off
@@ -60,7 +60,7 @@ static int8_t is_init = 0;
     static inline uint8_t time_lasts(float80_t* elapsed)
     {
         struct timespec current;
-        if (clock_gettime(CLOCK_MONOTONIC,&current) == -1)
+        if (clock_gettime(CLOCK_MONOTONIC, &current) == -1)
         {
             return 1;
         }
@@ -90,7 +90,7 @@ static int8_t is_init = 0;
      *  @retval 2   nothing could be printed                                                        *
      *  ------------------------------------------------------------------------------------------- **/
 
-    uint8_t write_time_lasts(const uint8_t level,const char* restrict const level_color[],const char* restrict const level_msg[],const char* restrict const name_file,const char* restrict const name_func,const uint64_t line_number,const char* restrict const msg)
+    uint8_t write_time_lasts(const uint8_t level, const char* restrict const level_color[], const char* restrict const level_msg[], const char* restrict const name_file, const char* restrict const name_func, const uint64_t line_number, const char* restrict const msg)
     {
         if (is_init)
         {
@@ -103,12 +103,20 @@ static int8_t is_init = 0;
             if (!(time_lasts(&current_lasts)))
             {
                 #ifndef NO_TERMINAL
-                    fprintf(stdout,"%015.9Lf | %s%s\033[0m | %s [%s:%s:%li]\n",current_lasts,level_color[level],level_msg[level],msg,name_file,name_func,line_number);
+                    #ifdef DEBUG_MOD
+                        fprintf(stdout, "%015.9Lf | %s%s\033[0m | %s [%s:%s:%li]\n", current_lasts, level_color[level], level_msg[level], msg, name_file, name_func, line_number);
+                    #else
+                        fprintf(stdout, "%015.9Lf | %s%s\033[0m | %s\n", current_lasts, level_color[level], level_msg[level], msg);
+                    #endif
                     done = 0;
                 #endif
                 
                 #ifdef NAME_FILE
-                    fprintf(LOGFILE,"%015.9Lf\t%s\t%s\t%s\t%s\t%li\n",current_lasts,level_msg[level],msg,name_file,name_func,line_number);
+                    #ifdef DEBUG_MOD
+                        fprintf(LOGFILE, "%015.9Lf\t%s\t%s\t%s\t%s\t%li\n", current_lasts, level_msg[level], msg, name_file, name_func, line_number);
+                    #else
+                        fprintf(LOGFILE, "%015.9Lf\t%s\t%s\n", current_lasts, level_msg[level], msg);
+                    #endif
                     fflush(LOGFILE);
                     done = 0;
                 #endif
@@ -138,7 +146,7 @@ static int8_t is_init = 0;
      *  @retval 2   memory allocation failed                                                        *
      *  ------------------------------------------------------------------------------------------- **/
 
-    uint8_t date_and_time(char** restrict formated,const uint16_t on_terminal)
+    uint8_t date_and_time(char** restrict formated, const uint16_t on_terminal)
     {
         time_t now = time(NULL);
         struct tm* time = localtime(&now);
@@ -244,7 +252,7 @@ static int8_t is_init = 0;
      *  @retval 2   nothing could be printed                                                        *
      *  ------------------------------------------------------------------------------------------- **/
 
-    uint8_t write_date_time(const uint8_t level,const char* restrict const level_color[],const char* restrict const level_msg[],const char* restrict const name_file,const char* restrict const name_func,const uint64_t line_number,const char* restrict const msg)
+    uint8_t write_date_time(const uint8_t level, const char* restrict const level_color[], const char* restrict const level_msg[], const char* restrict const name_file, const char* restrict const name_func, const uint64_t line_number, const char* restrict const msg)
     {
         if (is_init)
         {
@@ -256,18 +264,26 @@ static int8_t is_init = 0;
             char* restrict current_time;
 
             #ifndef NO_TERMINAL
-                if (!(date_and_time((char** restrict)&current_time,1)))
+                if (!(date_and_time((char** restrict)&current_time, 1)))
                 {
-                    fprintf(stdout,"%s | %s%s\033[0m | %s [%s:%s:%li]\n",current_time,level_color[level],level_msg[level],msg,name_file,name_func,line_number);
+                    #ifdef DEBUG_MOD
+                        fprintf(stdout, "%s | %s%s\033[0m | %s [%s:%s:%li]\n", current_time, level_color[level], level_msg[level], msg, name_file, name_func, line_number);
+                    #else
+                        fprintf(stdout, "%s | %s%s\033[0m | %s\n", current_time, level_color[level], level_msg[level], msg);
+                    #endif
                     done = 0;
                 }
                 free(current_time);
             #endif
 
             #ifdef NAME_FILE
-                if ((date_and_time((char** restrict)&current_time,0)))
+                if ((date_and_time((char** restrict)&current_time, 0)))
                 {
-                    fprintf(LOGFILE,"%s\t%s\t%s\t%s\t%s\t%li\n",current_time,level_msg[level],msg,name_file,name_func,line_number);
+                    #ifdef DEBUG_MOD
+                        fprintf(LOGFILE, "%s\t%s\t%s\t%s\t%s\t%li\n", current_time, level_msg[level], msg, name_file, name_func, line_number);
+                    #else
+                        fprintf(LOGFILE, "%s\t%s\t%s\n", current_time, level_msg[level], msg);
+                    #endif
                     fflush(LOGFILE);
                     done = 0;
                 }
@@ -297,11 +313,11 @@ static int8_t is_init = 0;
     uint8_t write_connect(const char* restrict const msg)
     {
         #ifndef NO_TERMINAL
-            fprintf(stdout,"%s\n",msg);
+            fprintf(stdout, "%s\n", msg);
         #endif
 
         #ifdef NAME_FILE
-            fprintf(OUT,"\t%s\n",msg);
+            fprintf(OUT, "\t%s\n", msg);
         #endif
 
         return 0;
@@ -330,7 +346,7 @@ uint8_t log_init(void)
         #ifdef NAME_FILE
             if (OUT == NULL)
             {
-                if ((OUT = fopen(NAME_FILE,"a+")) == NULL){
+                if ((OUT = fopen(NAME_FILE, "a+")) == NULL){
                     return (uint8_t)0;
                 }
                 done = 1;
@@ -338,7 +354,7 @@ uint8_t log_init(void)
         #endif
 
         #ifndef TYPE_TIME
-            done = (!((uint8_t)(clock_gettime(CLOCK_MONOTONIC,&start_time) == 0)));
+            done = (!((uint8_t)(clock_gettime(CLOCK_MONOTONIC, &start_time) == 0)));
         #endif
         
         #ifdef DEBUG_MOD
@@ -414,7 +430,7 @@ uint8_t log_shutdown(void)
   *  @retval 2 Not connected.                                   *
   * ----------------------------------------------------------- **/
 
-uint8_t log_write(const uint8_t level,const char* restrict const filename,const char* restrict const funcname,const uint64_t line,const char* restrict const msg)
+uint8_t log_write(const uint8_t level, const char* restrict const filename, const char* restrict const funcname, const uint64_t line, const char* restrict const msg)
 {
     if (is_init != (int8_t)0)
     {
@@ -446,9 +462,9 @@ uint8_t log_write(const uint8_t level,const char* restrict const filename,const 
         #endif
 
         #ifndef TYPE_TIME
-            done_printing = write_time_lasts(level,LEVEL_COLOR,LEVEL_MSG,filename,funcname,line,msg);
+            done_printing = write_time_lasts(level, LEVEL_COLOR, LEVEL_MSG, filename, funcname, line, msg);
         #else
-            done_printing = write_date_time(level,LEVEL_COLOR,LEVEL_MSG,filename,funcname,line,msg);
+            done_printing = write_date_time(level, LEVEL_COLOR, LEVEL_MSG, filename, funcname, line, msg);
         #endif
 
         if (!(done_printing))
