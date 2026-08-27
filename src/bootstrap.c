@@ -41,7 +41,8 @@ int bootstrap_run(void)
 
   LOG_INFO("Bootstrap started.");
 
-  if (net_init()) {
+  if (net_init())
+  {
     LOG_ERROR("Failed to initialize net module.");
     goto exit;
   }
