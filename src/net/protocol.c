@@ -1,24 +1,7 @@
 #include "protocol.h"
 
-enum OPCODE {
-  OP_HANDSHAKE,
-  OP_PEER_RENDEZVOUS,    // Open new connection for current peer
-  OP_FOREIGN_RENDEZVOUS, // Ask to be contacted by other peer
-  OP_KEEPALIVE,
-  OP_NODE_DISCOVERY, // Initially used + gossip each delta t
-  OP_PING,
-  OP_PONG,
-  OP_DATA,
-  OP_DISCONNECT,
-  OP_VERSION,
-  OP_ASK_UPDATE,
-  OP_SEND_UPDATE,
-  PARANOIA_ANTIHACK
-};
-
-typedef enum opcode_t;
-
 enum DATA_TYPE {
+  DATA_CERTIFICATE,
   DATA_RAW,
   DATA_EXEC,
   DATA_UPDATE,
@@ -27,7 +10,14 @@ enum DATA_TYPE {
   DATA_VIDEO
 };
 
-typedef enum msg_type_t;
+typedef enum data_type_t;
+
+struct NET_PACKET {
+  opcode_t opcode;
+  void     data[];
+};
+
+typedef NET_PACKET net_packet_t;
 
 struct P2P_PACKET {
   uint8_t     certificate[];

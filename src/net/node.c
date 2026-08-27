@@ -13,6 +13,8 @@
 #define _GNU_SOURCE
 
 #include "node.h"
+#include "protocol.h"
+
 #include "logger.h"
 
 #include <stdio.h>
@@ -66,6 +68,29 @@ void* listen_thread(void* arg) {
         }
     }
     return NULL;
+}
+
+int punch_hole(int sock, struct sockaddr* peer) {
+  char msg[32];
+  struct timespec ts = {
+    .tv_sec = 0,
+    .tv_nsec = 20000000
+  };
+  
+  
+  snprintf(msg, sizeof(msg), "PING");
+        
+  ssize_t sent = sendto(sock, msg, strlen(msg), 0,
+                              (struct sockaddr*)&peer, sizeof(peer));
+  if (sent < 0) {
+    LOG_ERROR("sendto failed.");
+
+    return 1;
+  }
+
+  nanosleep(&ts, NULL);
+
+  return 0;
 }
 
 uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {

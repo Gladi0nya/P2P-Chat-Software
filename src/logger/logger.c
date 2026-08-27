@@ -39,88 +39,12 @@ static int8_t is_init = 0;
     //File used to make logs
     static FILE* restrict OUT = NULL;
 #else
-    #ifdef NO_TERMINAL
-        #undef NO_TERMINAL
+    #ifdef AUGUSTIN_MODE
+        #undef AUGUSTIN_MODE
     #endif
 #endif
 
-#ifndef TYPE_TIME
-    //Time of the begin of the program
-    static struct timespec start_time = {0};
-
-    /** ------------------------------------------------------------------------------------------- *
-     *  time_lasts                                                                                  *
-     *                                                                                              *
-     *  Retrieve the elapsed time since the logger was initialized                                  *
-     *                                                                                              *
-     *  @retval 0   time passed was assigned to elapsed                                             *
-     *  @retval 1   error                                                                           *
-     *  ------------------------------------------------------------------------------------------- **/
-
-    static inline uint8_t time_lasts(float80_t* elapsed)
-    {
-        struct timespec current;
-        if (clock_gettime(CLOCK_MONOTONIC,&current) == -1)
-        {
-            return 1;
-        }
-
-        *elapsed = (current.tv_sec - start_time.tv_sec) + (current.tv_nsec - start_time.tv_nsec) / 1000000000.0L;
-        return 0;
-    }
-
-
-    /** ------------------------------------------------------------------------------------------- *
-     *  write_time_lasts                                                                            *
-     *                                                                                              *
-     *  Write the logs when the lasting time data is needed                                         *
-     *                                                                                              *
-     *  @param output       output where the log has to be written                                  *
-     *  @param level        level of log                                                            *
-     *  @param level_color  tab color used to write the level of log inside of the terminal         *
-     *                      NULL when writing inside of a log file                                  *
-     *  @param level_msg    convertion from the integer : level, to a char* ready to print          *
-     *  @param name_file    name of the file which called for a log                                 *
-     *  @param name_func    name of the function which called for a log                             *
-     *  @param line_number  number of the line which called for a log                               *
-     *  @param msg          message to print inside of the log                                      *
-     *                                                                                              *
-     *  @retval 0   wrote the given message inside of the log                                       *
-     *  @retval 1   logs are not initialized                                                        *
-     *  @retval 2   nothing could be printed                                                        *
-     *  ------------------------------------------------------------------------------------------- **/
-
-    uint8_t write_time_lasts(const uint8_t level,const char* restrict const level_color[],const char* restrict const level_msg[],const char* restrict const name_file,const char* restrict const name_func,const uint64_t line_number,const char* restrict const msg)
-    {
-        if (is_init)
-        {
-            #ifdef NO_TERMINAL
-                (void)level_color;
-            #endif
-            uint8_t done = 2;
-
-            float80_t current_lasts;
-            if (!(time_lasts(&current_lasts)))
-            {
-                #ifndef NO_TERMINAL
-                    fprintf(stdout,"%015.9Lf | %s%s\033[0m | %s [%s:%s:%li]\n",current_lasts,level_color[level],level_msg[level],msg,name_file,name_func,line_number);
-                    done = 0;
-                #endif
-                
-                #ifdef NAME_FILE
-                    fprintf(LOGFILE,"%015.9Lf\t%s\t%s\t%s\t%s\t%li\n",current_lasts,level_msg[level],msg,name_file,name_func,line_number);
-                    fflush(LOGFILE);
-                    done = 0;
-                #endif
-            }
-
-            return done;
-        }
-        return 1;
-    }
-
-
-#else
+#ifdef TYPE_TIME
     //Size that should be used to format the time if using date and time type
     static uint8_t size_time = 0;
 
@@ -279,6 +203,35 @@ static int8_t is_init = 0;
         return 1;
     }
 
+
+#else
+    //Time of the begin of the program
+    static struct timespec start_time = {0};
+
+    /** ------------------------------------------------------------------------------------------- *
+     *  log_time_spent                                                                              *
+     *                                                                                              *
+     *  Retrieve the elapsed time since the logger was initialized                                  *
+     *                                                                                              *
+     *  @retval 0   time passed was assigned to elapsed                                             *
+     *  @retval 1   error                                                                           *
+     *  ------------------------------------------------------------------------------------------- **/
+
+    static inline uint8_t log_time_spent(float80_t* elapsed)
+    {
+        struct timespec current;
+	
+        if (clock_gettime(CLOCK_MONOTONIC, &current) == -1)
+        {
+            return 1;
+        }
+
+        *elapsed = (current.tv_sec - start_time.tv_sec) +
+	           (current.tv_nsec - start_time.tv_nsec) / 1000000000.0L;
+
+	return 0;
+    }
+
 #endif
 
 #ifdef DEBUG_MOD
@@ -296,7 +249,7 @@ static int8_t is_init = 0;
 
     uint8_t write_connect(const char* restrict const msg)
     {
-        #ifndef NO_TERMINAL
+        #ifndef AUGUSTIN_MODE
             fprintf(stdout,"%s\n",msg);
         #endif
 
@@ -323,22 +276,20 @@ static int8_t is_init = 0;
 
 uint8_t log_init(void)
 {
-    if (!(is_init))
+    if (!is_init)
     {
-        uint8_t done = 0;
-
         #ifdef NAME_FILE
             if (OUT == NULL)
             {
                 if ((OUT = fopen(NAME_FILE,"a+")) == NULL){
-                    return (uint8_t)0;
+                    return 0;
                 }
-                done = 1;
             }
         #endif
 
         #ifndef TYPE_TIME
-            done = (!((uint8_t)(clock_gettime(CLOCK_MONOTONIC,&start_time) == 0)));
+            if (clock_gettime(CLOCK_MONOTONIC,&start_time) != 0)
+	      return 1;
         #endif
         
         #ifdef DEBUG_MOD
@@ -346,23 +297,25 @@ uint8_t log_init(void)
             {
                 //Add something to print in case no message wase printed??
             }
-            done = 0;
         #endif
 
-        #ifndef NO_TERMINAL
-            is_init = (int8_t)1;
+        #ifndef AUGUSTIN_MODE
+            is_init = 1;
         #endif
+	    
         #ifdef NAME_FILE
-            is_init = (int8_t)1;
+            is_init = 1;
         #endif
 
-        return done;
+        return 0;
     }
-    return (uint8_t)2;
+    
+    return 2;
 }
 
 /** ----------------------------------------------------------- *
-  *  log_sutdown                                                *
+  *  log_shitdown (You wrote log sutdown, at first, here my     *
+  *                answer)                                      *
   *                                                             *
   *  Stop the logger module.                                    *
   *                                                             *
@@ -378,7 +331,7 @@ uint8_t log_shutdown(void)
         #ifdef DEBUG_MOD
             if (!(write_connect("Logs stopped")))
             {
-                //Add something to print in case no message wase printed??
+	      return 1;
             }
         #endif
 
@@ -388,16 +341,19 @@ uint8_t log_shutdown(void)
                 if (fclose(OUT))
                 {
                     LOG_ERROR("Failed to close the log file");
-                    return (uint8_t)1;
+
+		    return 1;
                 }
+		
                 OUT = NULL;
             }
         #endif
 
-        is_init = (int8_t)0;
-        return (uint8_t)0;
+        is_init = 0;
+        return 0;
     }
-    return (uint8_t)2;
+    
+    return 2;
 }
 
 /** ----------------------------------------------------------- *
@@ -414,48 +370,57 @@ uint8_t log_shutdown(void)
   *  @retval 2 Not connected.                                   *
   * ----------------------------------------------------------- **/
 
-uint8_t log_write(const uint8_t level,const char* restrict const filename,const char* restrict const funcname,const uint64_t line,const char* restrict const msg)
+uint8_t log_write(const uint8_t level, const char* restrict const filename, const char* restrict const funcname, const uint64_t line, const char* restrict const msg)
 {
+  
     if (is_init != (int8_t)0)
     {
         #ifndef DEBUG_MOD
             if (level == LOG_LEVEL_DEBUG)
-            {
+	    {
                 return (int8_t)3;
             }
         #endif
 
-        const char* const restrict LEVEL_MSG[] = {
-            "ERROR",
-            "WARN ",
-            "DEBUG",
-            "INFO "
-        };
+	    const char* const restrict LEVEL_MSG[] = {
+	      "ERROR",
+	      "WARN ",
+	      "DEBUG",
+	      "INFO "
+	    };
 
-        int8_t done_printing = 1;
-
-        #ifndef NO_TERMINAL
+        #ifndef AUGUSTIN_MODE
             const char* const restrict LEVEL_COLOR[] = {
                 "\033[0;31m",
                 "\033[0;33m",
                 "\033[0;32m",
                 "\033[0;34m"
             };
-        #else
-            const char* const restrict LEVEL_COLOR[] = {NULL};
         #endif
 
-        #ifndef TYPE_TIME
-            done_printing = write_time_lasts(level,LEVEL_COLOR,LEVEL_MSG,filename,funcname,line,msg);
+        #ifdef TYPE_TIME
+	    if (write_date_time(level, LEVEL_COLOR, LEVEL_MSG, filename, funcname, line, msg))
+	      return 1;
         #else
-            done_printing = write_date_time(level,LEVEL_COLOR,LEVEL_MSG,filename,funcname,line,msg);
-        #endif
 
-        if (!(done_printing))
-        {
-            return (uint8_t)0;
-        }
-        return (uint8_t)1;
+	    float80_t elapsed;
+
+	    if (log_time_spent(&elapsed))
+	      return 1;
+
+	    
+            #ifndef AUGUSTIN_MODE
+	        fprintf(stdout,"%015.9Lf | %s%s\033[0m | %s [%s:%s:%li]\n", elapsed, LEVEL_COLOR[level], LEVEL_MSG[level], msg, filename, funcname, line);
+	    #endif
+                
+            #ifdef NAME_FILE
+                fprintf(LOGFILE,"%015.9Lf\t%s\t%s\t%s\t%s\t%li\n", elapsed, LEVEL_MSG[level], msg, filename, funcname, line);
+                fflush(LOGFILE);
+            #endif
+         #endif
+
+	    return 0;
     }
-    return (uint8_t)2;
+    
+    return 2;
 }

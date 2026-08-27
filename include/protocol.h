@@ -1,0 +1,23 @@
+#ifndef PROTOCOL_H
+#define PROTOCOL_H
+
+enum OPCODE {
+  OP_PUNCH,
+  OP_HELLO,
+  OP_CRYPTSHAKE,
+  OP_PEER_RENDEZVOUS,  // Open new connection for current peer
+  OP_RELAY_RENDEZVOUS, // Ask to be contacted by other peer
+  OP_KEEPALIVE,
+  OP_NODE_DISCOVERY,   // Initially used + gossip each delta t
+  OP_PING,
+  OP_PONG,
+  OP_DATA,
+  OP_DISCONNECT,
+  OP_VERSION,
+  OP_ASK_UPDATE,
+  OP_SEND_UPDATE,
+  OP_PARANOIA
+};
+
+typedef enum OPCODE opcode_t;
+#endif
