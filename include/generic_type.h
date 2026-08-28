@@ -24,4 +24,6 @@ typedef float       float32_t;
 typedef double      float64_t;
 typedef long double float80_t; // Please make sure you compile with gcc, else it wont be 80 bits
 
+typedef unsigned char byte;
+
 #endif

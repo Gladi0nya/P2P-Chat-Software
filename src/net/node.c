@@ -52,10 +52,16 @@ void* listen_thread(void* arg) {
         if (n > 0) {
 	  buffer[n] = '\0';
 
-	  if (!isConnected)
+	  if (!isConnected) {
+	    LOG_INFO("Msg received from peer.");
+	    LOG_INFO("Waiting for peer to receive us.");
 	    isConnected = 1;
+	  }
 	  if (!isPeerConnected) {
 	    if (strcmp(buffer, "connected") == 0) {
+	      
+	      LOG_INFO("Peer received us.");
+    
 	      isPeerConnected = 1;
 	    }
 	  }
@@ -67,28 +73,42 @@ void* listen_thread(void* arg) {
 	  }
         }
     }
+    
     return NULL;
 }
 
-int punch_hole(int sock, struct sockaddr* peer) {
-  char msg[32];
+int node_punch_hole_await_cond(int sock, struct sockaddr* peer, uint8_t* flag) {
+  size_t    ph_packet_len = sizeof(packet_t) + sizeof(uint64_t);
+
+  packet_t* ph_packet;
+
+  ph_packet = malloc(ph_packet_len);
+
+  ph_packet->op = OP_PUNCH;
+
+  *(uint64_t*)ph_packet->data = 0; // packet id  
+
   struct timespec ts = {
     .tv_sec = 0,
     .tv_nsec = 20000000
   };
   
+
+  while (!(*flag)) {
   
-  snprintf(msg, sizeof(msg), "PING");
-        
-  ssize_t sent = sendto(sock, msg, strlen(msg), 0,
-                              (struct sockaddr*)&peer, sizeof(peer));
-  if (sent < 0) {
-    LOG_ERROR("sendto failed.");
+    ssize_t sent = sendto(sock, ph_packet, ph_packet_len,
+			  0, peer, sizeof(*peer));
 
-    return 1;
+    if (sent < 0) {
+      LOG_ERROR("sendto failed.");
+
+      return 1;
+    }
+
+    nanosleep(&ts, NULL);
+
+    (*(uint64_t*)ph_packet->data)++; // increment packet id
   }
-
-  nanosleep(&ts, NULL);
 
   return 0;
 }
@@ -132,27 +152,7 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
     printf("[*] Local port: %d\n", ntohs(local.sin_port));
     printf("[*] Target: %s:%d\n", ip_str, peer_addr.port);
     
-    while(!isConnected) {
-        char msg[32];
-        snprintf(msg, sizeof(msg), "PING");
-        
-        ssize_t sent = sendto(sock, msg, strlen(msg), 0,
-                              (struct sockaddr*)&peer, sizeof(peer));
-        if (sent < 0) {
-            LOG_ERROR("sendto failed.");
-        } else {
-	  //printf("[*] Sent %s\n", msg);
-        }
-        
-        struct timespec ts = {
-            .tv_sec = 0,
-            .tv_nsec = 20000000
-        };
-        nanosleep(&ts, NULL);
-    }
-
-    LOG_INFO("Msg received from peer.");
-    LOG_INFO("Waiting for peer to receive us.");
+    node_punch_hole_await_cond(sock, (struct sockaddr*)&peer, &isConnected);
 
     while(!isPeerConnected) {
         char msg[32];
@@ -173,8 +173,6 @@ uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
         nanosleep(&ts, NULL);
     }
 
-    LOG_INFO("Peer received us.");
-    
     printf("\n[Chat] Connecting... Enter messages:\n");
     char buffer[1024];
     

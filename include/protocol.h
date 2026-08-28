@@ -1,6 +1,8 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
+#include "generic_type.h"
+
 enum OPCODE {
   OP_PUNCH,
   OP_HELLO,
@@ -20,4 +22,11 @@ enum OPCODE {
 };
 
 typedef enum OPCODE opcode_t;
+
+struct PACKET {
+  opcode_t op;
+  byte data[];
+};
+
+typedef struct PACKET packet_t;
 #endif
