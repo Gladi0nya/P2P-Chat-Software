@@ -23,7 +23,7 @@
 #include <time.h>
 
 
-//DEBUG_MOD         : Debug mode is declared as turned off
+//DEBUG             : Debug mode is declared as turned off
 
 //LOG_NO_TERMINAL   : Not logging inside of the terminal
 
@@ -208,7 +208,7 @@ uint8_t log_init(void)
 }
 
 /** ----------------------------------------------------------- *
-  *  log_shitdown (You wrote log sutdown, at first, here my     *
+  *  log_shutdown (You wrote log sutdown, at first, here my     *
   *                answer)                                      *
   *                                                             *
   *  Stop the logger module.                                    *
