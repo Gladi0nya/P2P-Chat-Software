@@ -25,7 +25,8 @@
 uint8_t log_init(void);
 uint8_t log_shutdown(void);
 uint8_t log_write(const uint8_t level, const char* restrict const filename,
-		  const char* restrict const funcname, const uint64_t line, const char* restrict const msg);
+				  const char* restrict const funcname, const uint64_t line,
+				  const char* restrict const format,...);
 
 #define LOG_ERROR(msg)   log_write(LOG_LEVEL_ERROR, __FILE__, __func__, __LINE__, msg)
 #define LOG_WARNING(msg) log_write(LOG_LEVEL_WARNING, __FILE__, __func__, __LINE__, msg)

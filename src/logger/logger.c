@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <stdarg.h>
 #include <time.h>
 
 
@@ -253,24 +253,26 @@ uint8_t log_shutdown(void) {
 }
 
 
-/** ----------------------------------------------------------- *
-  *  log_write                                                  *
-  *                                                             *
-  *  Display message in the logs.                               *
-  *                                                             *
-  *  @param code    Log level                                   *
-  *  @param modname Module name                                 *
-  *  @param msg     Message to be displayed                     * 
-  *                                                             *
-  *  @retval 0 Successfully initialized.                        *
-  *  @retval 1 Failed to initialized.                           *
-  *  @retval 2 Not connected.                                   *
-  * ----------------------------------------------------------- **/
+/** --------------------------------------------------------------- *
+  *  log_write                                                      *
+  *                                                                 *
+  *  Display message in the logs.                                   *
+  *                                                                 *
+  *  @param level        Level of log                               *
+  *  @param name_file    Name of the file which the log comes from  *
+  *  @param name_func    Name of the function which needs a log     *
+  *  @param line_number  Line where the log function was called     *
+  *  @param msg          Message to print in the log                *
+  *                                                                 *
+  *  @retval 0 Successfully initialized.                            *
+  *  @retval 1 Failed to initialized.                               *
+  *  @retval 2 Not connected.                                       *
+  * --------------------------------------------------------------- **/
 
 uint8_t log_write(const uint8_t level, const char* restrict const filename,
-		  const char* restrict const funcname, const uint64_t line, const char* restrict const msg)
+		  const char* restrict const funcname, const uint64_t line,
+      const char* restrict const format,...)
 {
-  
   if (!is_init)
     return 1;
 
@@ -285,6 +287,12 @@ uint8_t log_write(const uint8_t level, const char* restrict const filename,
     "INFO ",
     "DEBUG"
   };
+  char msg[2048];
+
+  va_list arguments;
+  va_start(arguments, format);
+  vsnprintf(msg, sizeof(msg), format, arguments);
+  va_end(arguments);
 
   #ifndef LOG_NO_TERMINAL
   const char* const restrict LEVEL_COLOR[] = {
