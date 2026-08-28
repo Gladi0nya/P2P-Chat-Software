@@ -324,9 +324,15 @@ uint8_t log_write(const uint8_t level, const char* restrict const filename,
 
 	    
   #ifndef LOG_USE_AUGUSTIN
+
+  #ifdef __x86_64__
   fprintf(stdout,"%015.9Lf | %s%s\033[0m | %s [%s:%s:%li]\n", elapsed, LEVEL_COLOR[level], LEVEL_MSG[level], msg, filename, funcname, line);
+  #elif defined(__aarch64__)
+  fprintf(stdout,"%015.9Lf | %s%s\033[0m | %s [%s:%s:%lli]\n", elapsed, LEVEL_COLOR[level], LEVEL_MSG[level], msg, filename, funcname, line);
   #endif
-                
+
+  #endif
+  
   #ifdef LOG_USE_FILE
   fprintf(LOGFILE,"%015.9Lf\t%s\t%s\t%s\t%s\t%lli\n", elapsed, LEVEL_MSG[level], msg, filename, funcname, line);
   fflush(LOGFILE);

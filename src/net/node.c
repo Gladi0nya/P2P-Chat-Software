@@ -55,7 +55,12 @@ void* listen_thread(void* arg) {
 	  if (!isConnected) {
 	    uint64_t id = *((uint64_t*)(buffer + sizeof(opcode_t)));
 
+	    #ifdef __x86_64__
 	    printf("punch ID: %lu\n", id);
+            #elif defined(__aarch64__)
+            printf("punch ID: %llu\n", id);
+            #endif
+	    
 	    
 	    LOG_INFO("Msg received from peer.");
 	    LOG_INFO("Waiting for peer to receive us.");
