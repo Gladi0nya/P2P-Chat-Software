@@ -18,7 +18,7 @@ build/bootstrap.o: src/bootstrap.c
 	$(CC) $(CFLAGS) src/bootstrap.c -o build/bootstrap.o
 
 build/logger.o: src/logger/logger.c
-	$(CC) $(CFLAGS) src/logger/logger.c -o build/logger.o -DDEBUG_MOD
+	$(CC) $(CFLAGS) src/logger/logger.c -o build/logger.o -DDEBUG
 
 build/random.o: src/crypto/random.c
 	$(CC) $(CFLAGS) src/crypto/random.c -o build/random.o
