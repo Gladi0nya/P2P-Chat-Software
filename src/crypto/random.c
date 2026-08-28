@@ -25,6 +25,13 @@
 
 #include <arm_acle.h>
 
+#elif defined(__ANDROID__)
+
+#include <sys/syscall.h>
+#include <unistd.h>
+
+#define getrandom(buffer, buffer_sz, flag) syscall(SYS_getrandom, buffer, buffer_sz, flag)
+
 #else
 
 #include <sys/random.h>
@@ -56,6 +63,7 @@ int rnds8(uint8_t* const restrict u8)
     __rndr((unsigned long long*)&rand64); // Might consider using rndrrs
 
     #else
+
     if (getrandom(&rand64, sizeof(uint64_t), 0) != sizeof (uint64_t))
       return 1;
     
