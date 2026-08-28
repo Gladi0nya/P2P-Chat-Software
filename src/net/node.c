@@ -73,7 +73,7 @@ void* listen_thread(void* arg) {
       case OP_WIRED:
 	if (isPeerConnected)
 	  continue;
-	
+	isConnected = 1;
 	isPeerConnected = 1;
 	
 	id = *((uint64_t*)(buffer + sizeof(opcode_t)));
