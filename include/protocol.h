@@ -5,7 +5,7 @@
 
 enum OPCODE {
   OP_PUNCH,
-  OP_ACK,
+  OP_PUNCH_ACK,
   OP_MSG,
   //OP_CRYPTSHAKE,
   //OP_PEER_RENDEZVOUS,  // Open new connection for current peer
