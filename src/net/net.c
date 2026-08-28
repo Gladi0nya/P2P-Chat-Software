@@ -65,7 +65,7 @@ int net_connect(net_connection_t* const restrict conn, const char* const restric
 
   conn->peer.port = (uint16_t)atoi(peer_port);
   
-  if (CreateChannelForPeer(conn->sock, conn->peer) != 0)
+  if (node_add_peer(conn->sock, conn->peer) != 0)
     return 1;
 
   return 0;

@@ -14,6 +14,7 @@
 
 #include "node.h"
 #include "protocol.h"
+#include "net_helper.h"
 
 #include "logger.h"
 
@@ -22,8 +23,6 @@
 #include <string.h>
 
 #include <unistd.h>
-
-#include <time.h>
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -39,160 +38,117 @@ uint8_t isConnected = 0;
 uint8_t isPeerConnected = 0;
 
 void* listen_thread(void* arg) {
-    ThreadArgs* args = (ThreadArgs*)arg;
-    char buffer[1024];
-    struct sockaddr_in from_addr;
-    socklen_t addr_len = sizeof(from_addr);
+  ThreadArgs* args = (ThreadArgs*)arg;
+  char buffer[1024];
+  struct sockaddr_in from_addr;
+  socklen_t addr_len = sizeof(from_addr);
+  uint64_t id;
+  
+  
+  while (1) {
+    memset(buffer, 0, sizeof(buffer));
+    const int n = recvfrom(args->sock, buffer, sizeof(buffer) - 1, 0,
+			   (struct sockaddr*)&from_addr, &addr_len);
     
-    while (1) {
-        memset(buffer, 0, sizeof(buffer));
-        int n = recvfrom(args->sock, buffer, sizeof(buffer) - 1, 0,
-                         (struct sockaddr*)&from_addr, &addr_len);
+    if (n > 0) {
+      const opcode_t op = *(opcode_t*)buffer;
+      
+      buffer[n] = '\0';
+      
+      switch (op) {
+      case OP_PUNCH:
+	isConnected = 1;
 	
-        if (n > 0) {
-	  buffer[n] = '\0';
+	id = *((uint64_t*)(buffer + sizeof(opcode_t)));
+        #ifdef __x86_64__
+	printf("punch ID: %lu\n", id);
+        #else
+	printf("punch ID: %llu\n", id);
+        #endif
+	
+	break;
+      case OP_WIRED:
+	isPeerConnected = 1;
+	
+	id = *((uint64_t*)(buffer + sizeof(opcode_t)));
 
-	  if (!isConnected) {
-	    uint64_t id = *((uint64_t*)(buffer + sizeof(opcode_t)));
-
-	    #ifdef __x86_64__
-	    printf("punch ID: %lu\n", id);
-            #else
-            printf("punch ID: %llu\n", id);
-            #endif
-	    
-	    
-	    LOG_INFO("Msg received from peer.");
-	    LOG_INFO("Waiting for peer to receive us.");
-
-	    isConnected = 1;
-	  }
-	  if (!isPeerConnected) {
-	    if (strcmp(buffer, "connected") == 0) {
-	      
-	      LOG_INFO("Peer received us.");
-    
-	      isPeerConnected = 1;
-	    }
-	  }
-
-	  if (isPeerConnected && isConnected) {
-            printf("\n[Pair] %s\n", buffer);
-            printf("[Chat] ");
-            fflush(stdout);
-	  }
-        }
+        #ifdef __x86_64__
+	printf("punch ID: %lu\n", id);
+        #else
+	printf("punch ID: %llu\n", id);
+        #endif
+	
+	break;
+      }
+      
+      if (isPeerConnected && isConnected) {
+	printf("\n[Pair] %s\n", buffer);
+	printf("[Chat] ");
+	fflush(stdout);
+      }
     }
-    
-    return NULL;
+  }
+  
+  return NULL;
 }
 
-int node_punch_hole_await_cond(int sock, struct sockaddr* peer, uint8_t* flag) {
-  size_t    ph_packet_len = sizeof(packet_t) + sizeof(uint64_t);
-  packet_t* ph_packet;
-
-  ph_packet = malloc(ph_packet_len);
-
-  ph_packet->op = OP_PUNCH;
-
-  *(uint64_t*)ph_packet->data = 0; // packet id  
-
-  struct timespec ts = {
-    .tv_sec = 0,
-    .tv_nsec = 20000000 // Don't change it (or get DOSed)
+uint8_t node_add_peer(int sock, addr_t peer_addr) {
+  struct sockaddr_in peer = {
+    .sin_family = AF_INET,
+    .sin_port = htons(peer_addr.port),
+    .sin_addr.s_addr = peer_addr.ip
   };
 
-  while (!(*flag)) {
-    ssize_t sent = sendto(sock, ph_packet, ph_packet_len,
-			  0, peer, sizeof(*peer));
-
-    if (sent < 0) {
-      LOG_ERROR("sendto failed.");
-
-      return 1;
-    }
-
-    nanosleep(&ts, NULL);
-
-    (*(uint64_t*)ph_packet->data)++; // increment packet id
+  struct sockaddr_in local;
+  socklen_t len = sizeof(local);
+  getsockname(sock, (struct sockaddr*)&local, &len);
+  printf("[*] Local port: %d\n", ntohs(local.sin_port));
+    
+  char ip_str[INET_ADDRSTRLEN];
+  struct in_addr addr = { peer_addr.ip };
+  inet_ntop(AF_INET, &addr, ip_str, sizeof(ip_str));
+  printf("[*] Hole punching to %s:%u...\n", ip_str, peer_addr.port);
+  
+  ThreadArgs* args = malloc(sizeof(ThreadArgs));
+  if (!args) {
+    LOG_ERROR("malloc failed");
+    return 1;
   }
 
+  args->sock = sock;
+  args->peer_addr = peer;
+    
+  pthread_t listener;
+  if (pthread_create(&listener, NULL, listen_thread, args) != 0) {
+    LOG_ERROR("pthread_create() failed");
+    free(args);
+    return 1;
+  }
+
+  pthread_detach(listener);
+  
+  nat_punch_hole_until_cond(sock, OP_PUNCH, (struct sockaddr*)&peer, &isConnected);
+
+  nat_punch_hole_until_cond(sock, OP_WIRED, (struct sockaddr*)&peer, &isPeerConnected);
+
+  char buffer[1024];
+
+  LOG_INFO("P2P Ready, both sides connected.");
+    
+  while (1) {
+    printf("[Chat] ");
+    fflush(stdout);
+        
+    if (fgets(buffer, sizeof(buffer), stdin) == NULL) break;
+    buffer[strcspn(buffer, "\n")] = '\0';
+        
+    if (strcmp(buffer, "quit") == 0) break;
+        
+    sendto(sock, buffer, strlen(buffer), 0,
+	   (struct sockaddr*)&peer, sizeof(peer));
+  }
+    
+  pthread_cancel(listener);
+
   return 0;
-}
-
-uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
-    
-    struct sockaddr_in peer = {
-        .sin_family = AF_INET,
-        .sin_port = htons(peer_addr.port),
-        .sin_addr.s_addr = peer_addr.ip
-    };
-    
-    char ip_str[INET_ADDRSTRLEN];
-    struct in_addr addr = { peer_addr.ip };
-    inet_ntop(AF_INET, &addr, ip_str, sizeof(ip_str));
-    printf("[*] Hole punching to %s:%u...\n", ip_str, peer_addr.port);
-    
-    ThreadArgs* args = malloc(sizeof(ThreadArgs));
-    if (!args) {
-        LOG_ERROR("malloc failed");
-        return 1;
-    }
-    args->sock = sock;
-    args->peer_addr = peer;
-    
-    pthread_t listener;
-    if (pthread_create(&listener, NULL, listen_thread, args) != 0) {
-        LOG_ERROR("pthread_create failed");
-        free(args);
-        return 1;
-    }
-    pthread_detach(listener);
-
-    struct sockaddr_in local;
-    socklen_t len = sizeof(local);
-    getsockname(sock, (struct sockaddr*)&local, &len);
-    printf("[*] Local port: %d\n", ntohs(local.sin_port));
-    printf("[*] Target: %s:%d\n", ip_str, peer_addr.port);
-    
-    node_punch_hole_await_cond(sock, (struct sockaddr*)&peer, &isConnected);
-
-    while(!isPeerConnected) {
-        char msg[32];
-        snprintf(msg, sizeof(msg), "connected");
-        
-        ssize_t sent = sendto(sock, msg, strlen(msg), 0,
-                              (struct sockaddr*)&peer, sizeof(peer));
-        if (sent < 0) {
-            LOG_ERROR("sendto failed.");
-        } else {
-	  //printf("[*] Sent %s\n", msg);
-        }
-        
-        struct timespec ts = {
-            .tv_sec = 0,
-            .tv_nsec = 20000000
-        };
-        nanosleep(&ts, NULL);
-    }
-
-    printf("\n[Chat] Connecting... Enter messages:\n");
-    char buffer[1024];
-    
-    while (1) {
-        printf("[Chat] ");
-        fflush(stdout);
-        
-        if (fgets(buffer, sizeof(buffer), stdin) == NULL) break;
-        buffer[strcspn(buffer, "\n")] = '\0';
-        
-        if (strcmp(buffer, "quit") == 0) break;
-        
-        sendto(sock, buffer, strlen(buffer), 0,
-               (struct sockaddr*)&peer, sizeof(peer));
-    }
-    
-    pthread_cancel(listener);
-    close(sock);
-    return 0;
 }

@@ -15,6 +15,6 @@
 
 #include "net_type.h"
 
-uint8_t CreateChannelForPeer(int sock, addr_t peer_addr);
+uint8_t node_add_peer(int sock, addr_t peer_addr);
 
 #endif

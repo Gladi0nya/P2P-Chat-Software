@@ -1,7 +1,12 @@
 #include "net_helper.h"
 
+#include "logger.h"
+
 #include <netdb.h>
 
+
+#include <time.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/socket.h>
 
@@ -54,5 +59,39 @@ int resolve_domain(const char* const restrict hostname, struct sockaddr_in* out_
   
   freeaddrinfo(result);
   
+  return 0;
+}
+
+
+int nat_punch_hole_until_cond(int sock, opcode_t opcode, struct sockaddr* peer, uint8_t* flag) {
+  size_t    ph_packet_len = sizeof(packet_t) + sizeof(uint64_t);
+  packet_t* ph_packet;
+
+  ph_packet = malloc(ph_packet_len);
+
+  ph_packet->op = opcode;
+
+  *(uint64_t*)ph_packet->data = 0; // packet id  
+
+  struct timespec ts = {
+    .tv_sec = 0,
+    .tv_nsec = 20000000 // Don't change it (or get DOSed)
+  };
+
+  while (!(*flag)) {
+    ssize_t sent = sendto(sock, ph_packet, ph_packet_len,
+			  0, peer, sizeof(*peer));
+    
+    if (sent < 0) {
+      LOG_ERROR("sendto() failed.");
+      
+      return 1;
+    }
+
+    nanosleep(&ts, NULL);
+
+    (*(uint64_t*)ph_packet->data)++; // increment packet id
+  }
+
   return 0;
 }
