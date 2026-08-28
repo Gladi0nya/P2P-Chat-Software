@@ -36,8 +36,8 @@ typedef struct {
     struct sockaddr_in peer_addr;
 } ThreadArgs;
 
-uint8_t isConnected = 0;
-uint8_t isPeerConnected = 0;
+uint8_t is_both_connected = 0;
+uint8_t is_closed        = 1;
 
 void* listen_thread(void* arg) {
   ThreadArgs* args = (ThreadArgs*)arg;
@@ -46,8 +46,7 @@ void* listen_thread(void* arg) {
   socklen_t addr_len = sizeof(from_addr);
   uint64_t id;
   
-  
-  while (1) {
+    while (1) {
     memset(buffer, 0, sizeof(buffer));
     const int n = recvfrom(args->sock, buffer, sizeof(buffer) - 1, 0,
 			   (struct sockaddr*)&from_addr, &addr_len);
@@ -59,7 +58,7 @@ void* listen_thread(void* arg) {
       
       switch (op) {
       case OP_PUNCH:
-	if (isPeerConnected)
+	if (is_both_connected)
 	  continue;
 	
 	id = *((uint64_t*)(buffer + sizeof(opcode_t)));
@@ -69,20 +68,19 @@ void* listen_thread(void* arg) {
         LOG_DEBUG("punch ID: %llu\n", id);
         #endif
 
-
 	*(opcode_t*)packet = OP_PUNCH_ACK;
 	*(uint64_t*)(packet + sizeof(opcode_t)) = 1;
 	
         sendto(args->sock, packet, sizeof(opcode_t) + sizeof(uint64_t),
 			      0, (struct sockaddr*)&from_addr, addr_len);
 	
-	break;
-	
+	break;	
       case OP_PUNCH_ACK:
-	if (isPeerConnected)
+	if (is_both_connected)
 	  continue;
-	isConnected = 1;
-	isPeerConnected = 1;
+
+	is_both_connected = 1;
+	is_closed = 0;
 	
 	id = *((uint64_t*)(buffer + sizeof(opcode_t)));
 
@@ -94,9 +92,14 @@ void* listen_thread(void* arg) {
 	
 	break;
       case OP_MSG:
-	if (isPeerConnected && isConnected) {
-	  printf("\n[Pair] %s\n", buffer + sizeof(opcode_t));
-	  fflush(stdout);
+	if (is_both_connected) {
+	  printf("\n[Pair] %s\n[Chat] ", buffer + sizeof(opcode_t));
+	}
+	break;
+      case OP_CLOSE:
+	if (is_both_connected) {
+	  printf("\nPeer closed the connection.");
+	  is_closed = 1;
 	}
       }
     }
@@ -138,13 +141,13 @@ uint8_t node_add_peer(int sock, addr_t peer_addr) {
 
   pthread_detach(listener);
   
-  nat_punch_hole_until_cond(sock, OP_PUNCH, (struct sockaddr*)&peer, &isPeerConnected);
+  nat_punch_hole_until_cond(sock, OP_PUNCH, (struct sockaddr*)&peer, &is_both_connected);
 
   char buffer[1024];
 
   LOG_INFO("P2P Ready, both sides connected.");
     
-  while (1) {
+  while (!is_closed) {
     printf("[Chat] ");
     fflush(stdout);
 
@@ -160,6 +163,11 @@ uint8_t node_add_peer(int sock, addr_t peer_addr) {
     sendto(sock, buffer, strlen(buffer + sizeof(opcode_t)) + sizeof(opcode_t), 0,
 	   (struct sockaddr*)&peer, sizeof(peer));
   }
+
+  *(opcode_t*)buffer = OP_CLOSE;
+  
+  sendto(sock, buffer, sizeof(opcode_t), 0,
+	 (struct sockaddr*)&peer, sizeof(peer));
     
   #if defined(__ANDROID__)
   pthread_kill(listener, 0);
