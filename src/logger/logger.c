@@ -12,7 +12,7 @@
 
 #include "logger.h"
 #include "generic_type.h"
-#include "string_acts.h"
+// #include "string_acts.h" Not used so I removed it
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,7 +49,7 @@ static uint8_t size_time = 0;
  *  @retval 2   memory allocation failed                                                        *
  *  ------------------------------------------------------------------------------------------- **/
 
-uint8_t date_and_time(char** restrict formated,const uint16_t on_terminal) // TODO: This function looks kinda fatty, need of reducing its size and optimizing it.
+uint8_t date_and_time(char** restrict formated, const uint16_t on_terminal) // TODO: This function looks kinda fatty, need of reducing its size and optimizing it.
 {
   uint8_t index = 0;
   time_t now = time(NULL);
@@ -300,14 +300,15 @@ uint8_t log_write(const uint8_t level, const char* restrict const filename,
 
   #ifndef LOG_USE_AUGUSTIN
   if (!(date_and_time((char** restrict)&current_time,1)))
-    fprintf(stdout,"%s | %s%s\033[0m | %s [%s:%s:%li]\n",current_time,level_color[level],level_msg[level],msg,name_file,name_func,line_number);
+    fprintf(stdout,"%s | %s%s\033[0m | %s [%s:%s:%li]\n", current_time, LEVEL_COLOR[level], LEVEL_MSG[level], msg, filename, funcname, line);
 
   free(current_time);
   #endif
 
   #ifdef LOG_USE_FILE
   if ((date_and_time((char** restrict)&current_time,0))) {
-    fprintf(LOGFILE,"%s\t%s\t%s\t%s\t%s\t%li\n",current_time,level_msg[level],msg,name_file,name_func,line_number);
+
+    fprintf(LOGFILE,"%s\t%s\t%s\t%s\t%s\t%li\n", current_time, LEVEL_MSG[level], msg, filename, funcname, line);
     fflush(LOGFILE);
   }
 
