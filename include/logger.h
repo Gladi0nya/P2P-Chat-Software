@@ -2,10 +2,10 @@
  * @file  logger.h
  * @brief Logger definitions
  *
- * @author Tom Schmitt
  * @author Augustin Barniet
+ * @author Tom Schmitt
  *
- * Copyright (c) 2026 Tom Schmitt,Augustin Barniet
+ * Copyright (c) 2026 Augustin Barniet, Tom Schmitt
  * All rights reserved.
  *
  */
