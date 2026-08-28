@@ -70,7 +70,7 @@ void* listen_thread(void* arg) {
         #endif
 	
 	break;
-      case OP_WIRED:
+      case OP_ACK:
 	if (isPeerConnected)
 	  continue;
 	isConnected = 1;
@@ -79,18 +79,17 @@ void* listen_thread(void* arg) {
 	id = *((uint64_t*)(buffer + sizeof(opcode_t)));
 
         #ifdef __x86_64__
-        LOG_DEBUG("peer wired ID: %lu\n", id);
+        LOG_DEBUG("peer ack ID: %lu\n", id);
         #else
-	LOG_DEBUG("peer wired ID: %llu\n", id);
+	LOG_DEBUG("peer ack ID: %llu\n", id);
         #endif
 	
 	break;
-      }
-      
-      if (isPeerConnected && isConnected) {
-	printf("\n[Pair] %s\n", buffer);
-	printf("[Chat] ");
-	fflush(stdout);
+      case OP_MSG:
+	if (isPeerConnected && isConnected) {
+	  printf("\n[Pair] %s\n", buffer + sizeof(opcode_t));
+	  fflush(stdout);
+	}
       }
     }
   }
@@ -108,12 +107,9 @@ uint8_t node_add_peer(int sock, addr_t peer_addr) {
   struct sockaddr_in local;
   socklen_t len = sizeof(local);
   getsockname(sock, (struct sockaddr*)&local, &len);
-  printf("[*] Local port: %d\n", ntohs(local.sin_port));
-    
-  char ip_str[INET_ADDRSTRLEN];
-  struct in_addr addr = { peer_addr.ip };
-  inet_ntop(AF_INET, &addr, ip_str, sizeof(ip_str));
-  printf("[*] Hole punching to %s:%u...\n", ip_str, peer_addr.port);
+
+  LOG_INFO("Local port: %u\n", ntohs(local.sin_port));  
+  LOG_INFO("Hole punching to %u%u%u%u:%u...\n", *(uint8_t*)&peer_addr.ip, *(uint8_t*)(&peer_addr.ip + 1), *(uint8_t*)(&peer_addr.ip + 2), *(uint8_t*)(&peer_addr.ip + 3), peer_addr.port);
   
   ThreadArgs* args = malloc(sizeof(ThreadArgs));
   if (!args) {
@@ -127,6 +123,7 @@ uint8_t node_add_peer(int sock, addr_t peer_addr) {
   pthread_t listener;
   if (pthread_create(&listener, NULL, listen_thread, args) != 0) {
     LOG_ERROR("pthread_create() failed");
+
     free(args);
     return 1;
   }
@@ -135,7 +132,7 @@ uint8_t node_add_peer(int sock, addr_t peer_addr) {
   
   nat_punch_hole_until_cond(sock, OP_PUNCH, (struct sockaddr*)&peer, &isConnected);
 
-  nat_punch_hole_until_cond(sock, OP_WIRED, (struct sockaddr*)&peer, &isPeerConnected);
+  nat_punch_hole_until_cond(sock, OP_ACK, (struct sockaddr*)&peer, &isPeerConnected);
 
   char buffer[1024];
 
@@ -144,8 +141,10 @@ uint8_t node_add_peer(int sock, addr_t peer_addr) {
   while (1) {
     printf("[Chat] ");
     fflush(stdout);
-        
-    if (fgets(buffer, sizeof(buffer), stdin) == NULL) break;
+
+    *(opcode_t*)buffer = OP_MSG;
+    
+    if (fgets(buffer + sizeof(opcode_t), sizeof(buffer) - sizeof(opcode_t), stdin) == NULL) break;
     buffer[strcspn(buffer, "\n")] = '\0';
         
     if (strcmp(buffer, "quit") == 0) break;
@@ -159,6 +158,8 @@ uint8_t node_add_peer(int sock, addr_t peer_addr) {
   #else
   pthread_cancel(listener);
   #endif
+
+  //  free(ThreadArgs);
   
   return 0;
 }
