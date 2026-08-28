@@ -105,7 +105,7 @@ int node_punch_hole_await_cond(int sock, struct sockaddr* peer, uint8_t* flag) {
   
 
   while (!(*flag)) {
-  
+    printf("sent.");
     ssize_t sent = sendto(sock, ph_packet, ph_packet_len,
 			  0, peer, sizeof(*peer));
 
