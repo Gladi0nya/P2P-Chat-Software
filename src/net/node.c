@@ -154,7 +154,11 @@ uint8_t node_add_peer(int sock, addr_t peer_addr) {
 	   (struct sockaddr*)&peer, sizeof(peer));
   }
     
+  #if defined(__ANDROID__)
+  pthread_kill(listener, 0);
+  #else
   pthread_cancel(listener);
-
+  #endif
+  
   return 0;
 }
