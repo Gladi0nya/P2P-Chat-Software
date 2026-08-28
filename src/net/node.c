@@ -145,9 +145,9 @@ uint8_t node_add_peer(int sock, addr_t peer_addr) {
     *(opcode_t*)buffer = OP_MSG;
     
     if (fgets(buffer + sizeof(opcode_t), sizeof(buffer) - sizeof(opcode_t), stdin) == NULL) break;
-    buffer[strcspn(buffer, "\n")] = '\0';
+    buffer[strcspn(buffer + sizeof(opcode_t), "\n")] = '\0';
         
-    if (strcmp(buffer, "quit") == 0) break;
+    if (strcmp(buffer + sizeof(opcode_t), "quit") == 0) break;
         
     sendto(sock, buffer, strlen(buffer), 0,
 	   (struct sockaddr*)&peer, sizeof(peer));
