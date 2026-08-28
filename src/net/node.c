@@ -63,13 +63,13 @@ void* listen_thread(void* arg) {
 	
 	id = *((uint64_t*)(buffer + sizeof(opcode_t)));
         #ifdef __x86_64__
-	LOG_DEBUG("punch ID: %lu\n", id);
+	LOG_DEBUG("punch ID: %lu", id);
         #else
-        LOG_DEBUG("punch ID: %llu\n", id);
+        LOG_DEBUG("punch ID: %llu", id);
         #endif
 
 	*(opcode_t*)packet = OP_PUNCH_ACK;
-	*(uint64_t*)(packet + sizeof(opcode_t)) = 1;
+	*(uint64_t*)(packet + sizeof(opcode_t)) = id;
 	
         sendto(args->sock, packet, sizeof(opcode_t) + sizeof(uint64_t),
 			      0, (struct sockaddr*)&from_addr, addr_len);
@@ -85,10 +85,16 @@ void* listen_thread(void* arg) {
 	id = *((uint64_t*)(buffer + sizeof(opcode_t)));
 
         #ifdef __x86_64__
-        LOG_DEBUG("peer ack ID: %lu\n", id);
+        LOG_DEBUG("peer ack ID: %lu", id);
         #else
-	LOG_DEBUG("peer ack ID: %llu\n", id);
+	LOG_DEBUG("peer ack ID: %llu", id);
         #endif
+
+	*(opcode_t*)packet = OP_PUNCH_ACK;
+	*(uint64_t*)(packet + sizeof(opcode_t)) = id;
+	
+        sendto(args->sock, packet, sizeof(opcode_t) + sizeof(uint64_t),
+			      0, (struct sockaddr*)&from_addr, addr_len);
 	
 	break;
       case OP_MSG:
