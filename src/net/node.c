@@ -53,8 +53,13 @@ void* listen_thread(void* arg) {
 	  buffer[n] = '\0';
 
 	  if (!isConnected) {
+	    uint64_t id = *((uint64_t*)(buffer + sizeof(opcode_t)));
+
+	    printf("punch ID: %lu\n", id);
+	    
 	    LOG_INFO("Msg received from peer.");
 	    LOG_INFO("Waiting for peer to receive us.");
+
 	    isConnected = 1;
 	  }
 	  if (!isPeerConnected) {

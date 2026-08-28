@@ -328,7 +328,7 @@ uint8_t log_write(const uint8_t level, const char* restrict const filename,
   #endif
                 
   #ifdef LOG_USE_FILE
-  fprintf(LOGFILE,"%015.9Lf\t%s\t%s\t%s\t%s\t%li\n", elapsed, LEVEL_MSG[level], msg, filename, funcname, line);
+  fprintf(LOGFILE,"%015.9Lf\t%s\t%s\t%s\t%s\t%lli\n", elapsed, LEVEL_MSG[level], msg, filename, funcname, line);
   fflush(LOGFILE);
   #endif
 
