@@ -405,7 +405,7 @@ int stun_bind_sock(int* const restrict sock, uint16_t* const restrict pub_port)
   LOG_DEBUG("BINDING response received.");
 
   if (extract_xor_mapped_address(response, recv_len, NULL, pub_port)) {
-    LOG_ERROR("Failed to extract XOR-MAPPED-ADDRESS from Test 1");
+    LOG_ERROR("extract_xor_mapped_address() failed.");
 
     return 1;
   }

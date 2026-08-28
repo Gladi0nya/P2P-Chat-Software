@@ -57,25 +57,31 @@ void* listen_thread(void* arg) {
       
       switch (op) {
       case OP_PUNCH:
+	if (isConnected)
+	  continue;
+
 	isConnected = 1;
 	
 	id = *((uint64_t*)(buffer + sizeof(opcode_t)));
         #ifdef __x86_64__
-	printf("punch ID: %lu\n", id);
+	LOG_DEBUG("punch ID: %lu\n", id);
         #else
-	printf("punch ID: %llu\n", id);
+        LOG_DEBUG("punch ID: %llu\n", id);
         #endif
 	
 	break;
       case OP_WIRED:
+	if (isPeerConnected)
+	  continue;
+	
 	isPeerConnected = 1;
 	
 	id = *((uint64_t*)(buffer + sizeof(opcode_t)));
 
         #ifdef __x86_64__
-	printf("punch ID: %lu\n", id);
+        LOG_DEBUG("peer wired ID: %lu\n", id);
         #else
-	printf("punch ID: %llu\n", id);
+	LOG_DEBUG("peer wired ID: %llu\n", id);
         #endif
 	
 	break;
