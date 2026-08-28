@@ -327,7 +327,7 @@ uint8_t log_write(const uint8_t level, const char* restrict const filename,
 
   #ifdef __x86_64__
   fprintf(stdout,"%015.9Lf | %s%s\033[0m | %s [%s:%s:%li]\n", elapsed, LEVEL_COLOR[level], LEVEL_MSG[level], msg, filename, funcname, line);
-  #elif defined(__aarch64__)
+  #else
   fprintf(stdout,"%015.9Lf | %s%s\033[0m | %s [%s:%s:%lli]\n", elapsed, LEVEL_COLOR[level], LEVEL_MSG[level], msg, filename, funcname, line);
   #endif
 

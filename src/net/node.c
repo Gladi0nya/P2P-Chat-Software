@@ -57,7 +57,7 @@ void* listen_thread(void* arg) {
 
 	    #ifdef __x86_64__
 	    printf("punch ID: %lu\n", id);
-            #elif defined(__aarch64__)
+            #else
             printf("punch ID: %llu\n", id);
             #endif
 	    
