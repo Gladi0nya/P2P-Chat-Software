@@ -89,7 +89,6 @@ void* listen_thread(void* arg) {
 
 int node_punch_hole_await_cond(int sock, struct sockaddr* peer, uint8_t* flag) {
   size_t    ph_packet_len = sizeof(packet_t) + sizeof(uint64_t);
-
   packet_t* ph_packet;
 
   ph_packet = malloc(ph_packet_len);
@@ -100,12 +99,10 @@ int node_punch_hole_await_cond(int sock, struct sockaddr* peer, uint8_t* flag) {
 
   struct timespec ts = {
     .tv_sec = 0,
-    .tv_nsec = 20000000
+    .tv_nsec = 20000000 // Don't change it (or get DOSed)
   };
-  
 
   while (!(*flag)) {
-    printf("sent.");
     ssize_t sent = sendto(sock, ph_packet, ph_packet_len,
 			  0, peer, sizeof(*peer));
 
@@ -124,10 +121,6 @@ int node_punch_hole_await_cond(int sock, struct sockaddr* peer, uint8_t* flag) {
 }
 
 uint8_t CreateChannelForPeer(int sock, addr_t peer_addr) {
-    if (sock < 0) {
-        LOG_ERROR("Invalid socket provided.");
-        return 1;
-    }
     
     struct sockaddr_in peer = {
         .sin_family = AF_INET,
