@@ -100,12 +100,14 @@ void* listen_thread(void* arg) {
       case OP_MSG:
 	if (is_both_connected) {
 	  printf("\n[Pair] %s\n[Chat] ", buffer + sizeof(opcode_t));
+	  fflush(stdout);
 	}
 	break;
       case OP_CLOSE:
 	if (is_both_connected) {
 	  printf("\nPeer closed the connection.");
 	  is_closed = 1;
+	  fflush(stdout);
 	}
       }
     }
@@ -160,9 +162,9 @@ uint8_t node_add_peer(int sock, addr_t peer_addr) {
     *(opcode_t*)buffer = OP_MSG;
     
     if (fgets(buffer + sizeof(opcode_t), sizeof(buffer) - sizeof(opcode_t), stdin) == NULL) break;
-    buffer[strcspn(buffer + sizeof(opcode_t), "\n")] = '\0';
+    buffer[strcspn(buffer, "\n")] = '\0';
         
-    if (strcmp(buffer + sizeof(opcode_t), "quit") == 0) break;
+    if (buffer[sizeof(opcode_t) + 1] == 'q' && buffer[sizeof(opcode_t) + 2] == 'u' && buffer[sizeof(opcode_t) + 3] == 'i' && buffer[sizeof(opcode_t) + 4] == 't' ) break;
 
     printf("%s\n", buffer + sizeof(opcode_t));
     

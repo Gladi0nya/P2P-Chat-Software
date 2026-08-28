@@ -21,16 +21,16 @@
 
 #include <immintrin.h>
 
-#elif defined(__aarch64__)
-
-#include <arm_acle.h>
-
 #elif defined(__ANDROID__)
 
 #include <sys/syscall.h>
 #include <unistd.h>
 
 #define getrandom(buffer, buffer_sz, flag) syscall(SYS_getrandom, buffer, buffer_sz, flag)
+
+#elif defined(__aarch64__)
+
+#include <arm_acle.h>
 
 #else
 
