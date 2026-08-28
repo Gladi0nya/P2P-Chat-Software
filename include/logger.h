@@ -28,9 +28,9 @@ uint8_t log_write(const uint8_t level, const char* restrict const filename,
 				  const char* restrict const funcname, const uint64_t line,
 				  const char* restrict const format,...);
 
-#define LOG_ERROR(msg)   log_write(LOG_LEVEL_ERROR, __FILE__, __func__, __LINE__, msg)
-#define LOG_WARNING(msg) log_write(LOG_LEVEL_WARNING, __FILE__, __func__, __LINE__, msg)
-#define LOG_INFO(msg)    log_write(LOG_LEVEL_INFO, __FILE__, __func__, __LINE__, msg)
-#define LOG_DEBUG(msg)   log_write(LOG_LEVEL_DEBUG, __FILE__, __func__, __LINE__, msg)
+#define LOG_ERROR(...)   log_write(LOG_LEVEL_ERROR, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define LOG_WARNING(...) log_write(LOG_LEVEL_WARNING, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define LOG_INFO(...)    log_write(LOG_LEVEL_INFO, __FILE__, __func__, __LINE__, __VA_ARGS__)
+#define LOG_DEBUG(...)   log_write(LOG_LEVEL_DEBUG, __FILE__, __func__, __LINE__, __VA_ARGS__)
 
 #endif

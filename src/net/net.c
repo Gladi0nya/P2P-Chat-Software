@@ -50,7 +50,7 @@ int net_open(net_connection_t* const restrict conn, const char* const restrict m
     return 1;
   }
 
-  printf("Pub addr: %u.%u.%u.%u:%u\n", *(uint8_t*)&my_pub_addr, *((uint8_t*)&my_pub_addr + 1), *((uint8_t*)&my_pub_addr + 2), *((uint8_t*)&my_pub_addr + 3), conn->my_port); // Convert to logger function when format is available.
+  LOG_INFO("Pub addr: %u.%u.%u.%u:%u\n", *(uint8_t*)&my_pub_addr, *((uint8_t*)&my_pub_addr + 1), *((uint8_t*)&my_pub_addr + 2), *((uint8_t*)&my_pub_addr + 3), conn->my_port); // Convert to logger function when format is available.
   
   return 0;
 }
