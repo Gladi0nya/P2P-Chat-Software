@@ -48,7 +48,7 @@ void handle_punch_ack(peer_context_t *ctx, const uint8_t *buffer, int n,
     return;
   }
 
-  ctx->state = ETABLISHED;
+  ctx->state = PEER_ETABLISHED;
   
   uint64_t id = *(const uint64_t*)(buffer + sizeof(opcode_t));
   LOG_DEBUG("punch ack ID: %llu", (unsigned long long)id);
