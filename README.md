@@ -16,7 +16,6 @@ Peer to peer chatting System.
 │
 ├── protocol/                       # Message format 
 │   ├── message.h                   # struct Message, enum MessageType
-│   └── codec.c / .h                # encode_message() / decode_message()
 │
 ├── dispatch/                       # routing
 │   ├── dispatcher.c / .h           # dispatch_message()
