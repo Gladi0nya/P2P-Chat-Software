@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define PUNCH_INTERVAL_MS 20
+#define PUNCH_INTERVAL_MS 500
 
 void node_run(peer_context_t* ctx) {
   struct pollfd fds[2];
