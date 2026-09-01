@@ -69,10 +69,10 @@ typedef struct STUN_HOST stun_host_t;
 
 // Array of STUN servers
 static const stun_host_t STUN_SERVERS[] = {
-  {"stun.miwifi.com", 3478},
-  {"stun.sipthor.net", 3478},
-  {"stun.freeswitch.org", 3478},
-  {"stun.chat.bilibili.com", 3478},
+//  {"stun.miwifi.com", 3478},
+//  {"stun.sipthor.net", 3478},
+//  {"stun.freeswitch.org", 3478},
+//  {"stun.chat.bilibili.com", 3478},
   {"stun.l.google.com", 19302},
   {"stun.cloudflare.com", 3478},
   {"stun1.l.google.com", 3478},
@@ -287,7 +287,7 @@ int stun_client_check(uint32_t* const restrict pub_ip)
 
   struct sockaddr_in local_addr = {0};
 
-  local_addr.sin_family      = AF_INET;              
+  local_addr.sin_family      = AF_INET;
   local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
   local_addr.sin_port        = htons(0);
   
