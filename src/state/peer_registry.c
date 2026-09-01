@@ -15,11 +15,8 @@ int peer_registry_add(peer_context_t *ctx)
     LOG_INFO("Local port: %u", ntohs(local.sin_port));
     
   
-  LOG_DEBUG("Hole punching to %u.%u.%u.%u:%u...",
-	    (ctx->peer_addr.sin_addr.s_addr >> 24) & 0xFF,
-	    (ctx->peer_addr.sin_addr.s_addr >> 16) & 0xFF,
-	    (ctx->peer_addr.sin_addr.s_addr >> 8)  & 0xFF,
-	    (ctx->peer_addr.sin_addr.s_addr)       & 0xFF,
+  LOG_DEBUG("Hole punching to %s:%u...",
+	    inet_ntoa(ctx->peer_addr.sin_addr),
 	    ntohs(ctx->peer_addr.sin_port));
 
   ctx->state     = PEER_PUNCHING;
