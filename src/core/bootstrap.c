@@ -68,10 +68,10 @@ int bootstrap_start(void)
   }
 
   LOG_INFO("Your Public Address is: %u.%u.%u.%u:%u",
-	   (ctx.my_pub_ip >> 24) & 0xFF,
-	   (ctx.my_pub_ip >> 16) & 0xFF,
-	   (ctx.my_pub_ip >>  8) & 0xFF,
 	   (ctx.my_pub_ip      ) & 0xFF,
+	   (ctx.my_pub_ip >>  8) & 0xFF,
+	   (ctx.my_pub_ip >> 16) & 0xFF,
+	   (ctx.my_pub_ip >> 24) & 0xFF,
 	   ctx.my_port);
   
   printf("Enter Peer IP: ");

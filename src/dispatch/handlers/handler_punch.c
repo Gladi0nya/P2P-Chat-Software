@@ -27,10 +27,10 @@ void handle_punch(peer_context_t *ctx, const uint8_t *buffer, int n,
   if (!sendto(ctx->sock, packet, sizeof(packet), 0,
 	      (const struct sockaddr*)from_addr, addr_len))
     LOG_DEBUG("Failed to send punch request to %u.%u.%u.%u:%u.",
-	      (ctx->peer_addr.sin_addr.s_addr >> 24) & 0xFF,
-	      (ctx->peer_addr.sin_addr.s_addr >> 16) & 0xFF,
+	      (ctx->peer_addr.sin_addr.s_addr      ) & 0xFF,
 	      (ctx->peer_addr.sin_addr.s_addr >>  8) & 0xFF,
-	      (ctx->peer_addr.sin_addr.s_addr      ) & 0xFF,	      
+	      (ctx->peer_addr.sin_addr.s_addr >> 16) & 0xFF,
+	      (ctx->peer_addr.sin_addr.s_addr >> 24) & 0xFF,	      
 	      ctx->peer_addr.sin_port);
   
 }

@@ -26,12 +26,13 @@
 
 void node_run(peer_context_t* ctx) {
   struct pollfd fds[2];
+
   fds[0].fd     = ctx->sock;
   fds[0].events = POLLIN;
   fds[1].fd     = STDIN_FILENO;
   fds[1].events = POLLIN;
 
-  printf("[CHAT] ");
+  printf("Awaiting peer...");
   fflush(stdout);
   
   while (ctx->state != PEER_DISCONNECTED) {
@@ -46,6 +47,7 @@ void node_run(peer_context_t* ctx) {
     if (ret == 0 && ctx->state == PEER_PUNCHING) {
       hole_punch_send_one(ctx, OP_PUNCH, ctx->packet_id++,
 			  (struct sockaddr*)&ctx->peer_addr);
+      LOG_DEBUG("punch sent.");
     }
 
     // Net events
