@@ -15,7 +15,7 @@ Peer to peer chatting System.
 │   └── hole_punch.c / .h           # sending repeatedly PUNCH packets + resend / timeout
 │
 ├── protocol/                       # Message format 
-│   ├── message.h                   # struct Message, enum MessageType
+│   └── message.h                   # struct Message, enum MessageType
 │
 ├── dispatch/                       # routing
 │   ├── dispatcher.c / .h           # dispatch_message()
