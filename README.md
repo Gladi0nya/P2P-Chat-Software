@@ -30,7 +30,8 @@ Peer to peer chatting System.
 │   └── peer_registry.c / .h        # Peers added by user
 │
 └── ui/
-    └── chat_input.c / .h           # user message input```
+    └── chat_input.c / .h           # user message input
+```
     
 ** Rules
 
