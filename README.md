@@ -40,7 +40,7 @@ Peer to peer chatting System.
 - Route encoded Message to an handler ?	dispatch/
 - Definie / change state (peer ou global) ?	state/
 - Boot time execution ?	core/bootstrap.c
-- Run during program lfietime ?	core/node.c
+- Run during program lifetime ?	core/node.c
 
 **Copyright (c) 2026 Tom Schmitt and Augustin Barniet. All rights reserved.**
 

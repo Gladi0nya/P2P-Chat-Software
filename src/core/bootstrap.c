@@ -31,14 +31,12 @@
   *  @retval 1 Failed to initialized.                           *
   * ----------------------------------------------------------- **/
 
-int bootstrap_start(void)
+int bootstrap_start(char* lport, char* rip, char* rport)
 {
   int ret = 1;
   peer_context_t ctx;
-  char my_port[9], peer_ip[16], peer_port[9];
   
-  if (log_init())
-  {
+  if (log_init()) {
     fprintf(stderr, "Failed to initialize logger.\n");
     return 1;
   }
@@ -52,20 +50,28 @@ int bootstrap_start(void)
     goto exit;
   }
 
-  printf("What port would you like to listen on (>= 9999): ");
-  fflush(stdout);
+  if (lport == NULL) {
+    char my_port[9];
+    lport = my_port;
+  
+  
+    printf("What port would you like to listen on (>= 9999): ");
+    fflush(stdout);
 
-  if (fgets(my_port, sizeof(my_port), stdin) == NULL) {
-    LOG_ERROR("Input mismatch.");
-    goto exit;
+    if (fgets(my_port, sizeof(my_port), stdin) == NULL) {
+      LOG_ERROR("Input mismatch.");
+      goto exit;
+    }
+
+    my_port[strcspn(my_port, "\n")] = '\0';
+
   }
 
-  my_port[strcspn(my_port, "\n")] = '\0';
-
-  if (udp_socket_open_port_ctx(&ctx, my_port)) {
+  if (udp_socket_open_port_ctx(&ctx, lport)) {
     LOG_ERROR("udp_socket_open_port_ctx() failed.");
     goto exit;
   }
+  
 
   LOG_INFO("Your Public Address is: %u.%u.%u.%u:%u",
 	   (ctx.my_pub_ip      ) & 0xFF,
@@ -73,24 +79,37 @@ int bootstrap_start(void)
 	   (ctx.my_pub_ip >> 16) & 0xFF,
 	   (ctx.my_pub_ip >> 24) & 0xFF,
 	   ctx.my_port);
+
+
+  if (rip == NULL) {
+    char peer_ip[16];
+    rip = peer_ip;
+    
+    printf("Enter Peer IP: ");
+    fflush(stdout);
+    if (fgets(peer_ip, sizeof(peer_ip), stdin) == NULL) {
+      LOG_ERROR("Input mismatch.");
+      goto close_sock;
+    }
+
+    peer_ip[strcspn(peer_ip, "\n")] = '\0';
+  }
+
+  if (rport == NULL) {
+    char peer_port[9];
+    rport = peer_port;
+
+    printf("Enter Peer PORT: ");
+    fflush(stdout);
+    if (fgets(peer_port, sizeof(peer_port), stdin) == NULL) {
+      LOG_ERROR("Input mismatch.");
+      goto close_sock;
+    }
+
+    peer_port[strcspn(peer_port, "\n")] = '\0';
+  }
   
-  printf("Enter Peer IP: ");
-  fflush(stdout);
-  if (fgets(peer_ip, sizeof(peer_ip), stdin) == NULL) {
-    LOG_ERROR("Input mismatch.");
-    goto close_sock;
-  }
-  peer_ip[strcspn(peer_ip, "\n")] = '\0';
-
-  printf("Enter Peer PORT: ");
-  fflush(stdout);
-  if (fgets(peer_port, sizeof(peer_port), stdin) == NULL) {
-    LOG_ERROR("Input mismatch.");
-    goto close_sock;
-  }
-  peer_port[strcspn(peer_port, "\n")] = '\0';
-
-  if (udp_socket_set_peer_ctx(&ctx, peer_ip, peer_port)) {
+  if (udp_socket_set_peer_ctx(&ctx, rip, rport)) {
     LOG_ERROR("udp_socket_set_peer() failed.");
     goto close_sock;
   }

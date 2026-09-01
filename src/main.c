@@ -9,9 +9,11 @@
  *
  */
 
-#include <stdint.h>
-
 #include "core/bootstrap.h"
+
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 /** ----------------------------------------------------------- *
   *  main                                                       *
@@ -27,9 +29,30 @@
 
 int main(int argc, char **argv)
 {
-  // Remove compiler warnings (might add program arguments later)
-  (void)argc; 
-  (void)argv;
+  char* lport = NULL;
+  char* rip = NULL;
+  char* rport = NULL;
   
-  return bootstrap_start();
+  for (int i = 1; i < argc; i++) {
+    if ((strcmp(argv[i], "-h") == 0) || (strcmp(argv[i], "--help") == 0)) {
+      printf("Usage: %s -l [LISTENING_PORT] -r [PEER_IP] -p [PEER_PORT]\n", argv[0]);
+      return 0;
+    }
+
+    if (strcmp(argv[i], "-l") == 0) {
+      lport = argv[++i];
+      continue;
+    }
+
+    if (strcmp(argv[i], "-r") == 0) {
+      rip = argv[++i];
+      continue;
+    }
+
+    if (strcmp(argv[i], "-p") == 0) {
+      rport = argv[++i];
+    }
+  }
+  
+  return bootstrap_start(lport, rip, rport);
 }
