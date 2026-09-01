@@ -33,7 +33,7 @@ Peer to peer chatting System.
     └── chat_input.c / .h           # user message input
 ```
     
-** Rules
+## Rules
 
 - Related to socket_fd / sockaddr_in directly ?	net/
 - Encode/decode messages format ?	protocol/
