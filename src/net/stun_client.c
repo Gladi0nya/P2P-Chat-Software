@@ -1,5 +1,5 @@
 /**
- * @file stun.c
+ * @file stun_client.c
  * @brief STUN (Session Traversal Utilities for NAT) module
  *
  * @author Tom Schmitt
@@ -9,18 +9,17 @@
  *
  */
 
-#include "stun.h"
-#include "net_helper.h"
+#include "stun_client.h"
+#include "addr.h"
+#include "udp_socket.h"
 
-#include "random.h"
+#include "crypto/random.h"
 
-#include "logger.h"
+#include "logger/logger.h"
 
 #include <stdio.h>
 #include <string.h>
- 
 #include <errno.h>
-
 #include <unistd.h>
 
 #include <arpa/inet.h>
@@ -30,7 +29,6 @@
 #define DEFAULT_PORT  12345
 #define TIMEOUT_SEC       2
 #define PASS_COUNT        2
-#define STUN_SERVER_COUNT 11
 
 #define STUN_MAGIC_COOKIE       0x2112A442
 
@@ -40,8 +38,16 @@
 
 #define STUN_XOR_MAPPED_ADDRESS 0x0020
 
-// Structure for STUN packets
+// Structure for IPv4 address
+struct ADDR {
+  uint16_t port;
+  uint32_t ip;
+};
 
+// IPv4 address type
+typedef struct ADDR addr_t;
+
+// Structure for STUN packets
 struct STUN_PACKET {
   uint16_t msg_type;
   uint16_t msg_len;
@@ -50,22 +56,18 @@ struct STUN_PACKET {
 };
 
 // STUN packet type
-
 typedef struct STUN_PACKET stun_packet_t;
 
 // Structure for STUN hosts
-
 struct STUN_HOST {
   char*    hostname;
   uint16_t     port;
 };
 
 // STUN host type
-
 typedef struct STUN_HOST stun_host_t;
 
 // Array of STUN servers
-
 static const stun_host_t STUN_SERVERS[] = {
   {"stun.miwifi.com", 3478},
   {"stun.sipthor.net", 3478},
@@ -78,6 +80,8 @@ static const stun_host_t STUN_SERVERS[] = {
   {"stun3.l.google.com", 3478},
   {"stun4.l.google.com", 19302},
 };
+
+#define STUN_SERVER_COUNT (sizeof(STUN_SERVERS) / sizeof(STUN_SERVERS[0]))
 
 /** ----------------------------------------------------------- *
   *  generate_transaction_id                                    *
@@ -151,7 +155,7 @@ static int extract_xor_mapped_address(const uint8_t* const restrict response, co
 }
 
 /** ----------------------------------------------------------- *
-  *  stun_request                                               *
+  *  stun_client_request                                        *
   *                                                             *
   *  Send a request to a STUN server.                           *
   *                                                             *
@@ -162,7 +166,7 @@ static int extract_xor_mapped_address(const uint8_t* const restrict response, co
   *  @retval 1 Request not sent due to error.                   *
   * ----------------------------------------------------------- **/
 
-static int stun_request(int sock, const struct sockaddr_in* const restrict dest) {
+static int stun_client_request(int sock, const struct sockaddr_in* const restrict dest) {
   stun_packet_t    request     = { 0 };
 
   request.msg_type     = htons(STUN_BINDING_REQUEST);
@@ -184,7 +188,7 @@ static int stun_request(int sock, const struct sockaddr_in* const restrict dest)
 }
 
 /** ----------------------------------------------------------- *
-  *  stun_receive                                               *
+  *  stun_client_receive                                        *
   *                                                             *
   *  Receive STUN response from socket.                         *
   *                                                             *
@@ -196,7 +200,7 @@ static int stun_request(int sock, const struct sockaddr_in* const restrict dest)
   *  @retval 1 Failed to retrieve the response.                 *
   * ----------------------------------------------------------- **/
 
-static int stun_receive(const int sock, uint8_t* const restrict response, size_t* const restrict recv_len) {
+static int stun_client_receive(const int sock, uint8_t* const restrict response, size_t* const restrict recv_len) {
   struct sockaddr_in from_addr;
   struct timeval tv  = {TIMEOUT_SEC, 0};
 
@@ -243,99 +247,92 @@ static int stun_receive(const int sock, uint8_t* const restrict response, size_t
   return 0;
 }
 
-int stun_check(uint32_t* const restrict pub_ip) {
-  uint8_t pass = 0, i_srv = 0;
-  int sock    = -1;
-
-  struct sockaddr_in server_addr, local_addr;
-
-  uint8_t response[1024];
-  size_t recv_len;
-  addr_t pub[2];
+static int stun_query(int sock, uint8_t *used_idx, uint8_t *response, size_t *recv_len)
+{
+  const uint8_t start_idx = *used_idx; 
   
-  if (net_socket_create(&sock, SOCK_DGRAM)) {
-    LOG_DEBUG("net_socket_create() failed.");
+  for (uint8_t i = start_idx; i < STUN_SERVER_COUNT; i++) {
+    struct sockaddr_in server_addr;
 
-    return 1;
+    if (net_addr_resolve(STUN_SERVERS[i].hostname, &server_addr)) {
+      LOG_DEBUG("net_addr_resolve() failed for %s.", STUN_SERVERS[i].hostname);
+      continue;
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port   = htons(STUN_SERVERS[i].port);
+
+    if (stun_client_request(sock, &server_addr)) {
+      LOG_DEBUG("stun_request() failed.");
+      continue;
+    }
+
+    if (stun_client_receive(sock, response, recv_len) == 0) {
+      *used_idx = i;
+      return 0;
+    }
   }
 
-  memset(&local_addr, 0, sizeof(local_addr));
-  local_addr.sin_family = AF_INET;              
+  LOG_ERROR("No STUN host responded from index %u", *used_idx);
+  return 1;
+}
+
+int stun_client_check(uint32_t* const restrict pub_ip)
+{
+  int sock = -1;
+  uint8_t response[1024];
+  size_t recv_len;
+  addr_t pub[PASS_COUNT];
+  uint8_t idx = 0;
+
+  struct sockaddr_in local_addr = {0};
+
+  local_addr.sin_family      = AF_INET;              
   local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  local_addr.sin_port = htons(0);
+  local_addr.sin_port        = htons(0);
+  
+  if (udp_socket_create(&sock)) {
+    LOG_DEBUG("udp_socket_create() failed.");
+    return 1;
+  }
   
   if (bind(sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
     LOG_DEBUG("bind() failed.");
-
-    net_socket_close(&sock);
+    udp_socket_close(&sock);
     return 1;
   }
-  
-  next_pass:
-  if (resolve_domain(STUN_SERVERS[i_srv].hostname, &server_addr)) {
-    LOG_DEBUG("resolve_domain() failed.");
-    
-    if (++i_srv == STUN_SERVER_COUNT) {
-      LOG_ERROR("No stun host up.");
 
-      net_socket_close(&sock);
+  for (uint8_t pass = 0; pass < PASS_COUNT; pass++) {
+
+    if (stun_query(sock, &idx, response, &recv_len)) {
+      udp_socket_close(&sock);
       return 1;
     }
+
+    if (extract_xor_mapped_address(response, recv_len, &pub[pass].ip, &pub[pass].port)) {
+      LOG_DEBUG("Failed to parse XOR-MAPPED-ADDRESS.");
+      udp_socket_close(&sock);
+      return 1;
+    }
+
+    idx++;
+  }
     
-    goto next_pass;
-  }
-
-  LOG_DEBUG("STUN server ip resolved.");
-
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_port   = htons(STUN_SERVERS[i_srv].port);
-  
-  if (stun_request(sock, &server_addr)) {
-    LOG_DEBUG("stun_request() failed.");
-
-    net_socket_close(&sock);
-    return 1;
-  }
-
-  LOG_DEBUG("BINDING request sent.");
-  
-  if (stun_receive(sock, response, &recv_len)) {
-    LOG_DEBUG("stun_receive() failed.");
-
-    i_srv++;
-    goto next_pass;
-  }
-
-  LOG_DEBUG("BINDING response received.");
-
-  if (extract_xor_mapped_address(response, recv_len, &pub[pass].ip, &pub[pass].port)) {
-    LOG_ERROR("Failed to extract XOR-MAPPED-ADDRESS.");
-
-    net_socket_close(&sock);
-    return 1;
-  }
-
-  if (++pass < PASS_COUNT) {
-    i_srv++;
-    goto next_pass;
-  }
-  
   if (memcmp(&pub[0], &pub[1], sizeof(addr_t))) {
     LOG_WARNING("Detected public IP change.");
-
-    net_socket_close(&sock);
+    udp_socket_close(&sock);
     return 1;
   }
-
+  
   *pub_ip = pub[0].ip;
-
+  
   LOG_INFO("Friendly P2P NAT detected.");
-
+  udp_socket_close(&sock);
   return 0;
 }
 
 /** ----------------------------------------------------------- *
-  *  stun_bind_sock                                             *
+  *  stun_client_bind_sock                                      *
   *                                                             *
   *  Bind a socket and retrieve public port.                    *
   *                                                             *
@@ -346,69 +343,33 @@ int stun_check(uint32_t* const restrict pub_ip) {
   *  @retval 1 Error.                                           *
   * ----------------------------------------------------------- **/
 
-int stun_bind_sock(int* const restrict sock, uint16_t* const restrict pub_port)
+int stun_client_bind_sock(int* const restrict sock, uint16_t* const restrict pub_port)
 {
-  uint8_t i_srv = 0;
-  struct sockaddr_in server_addr, local_addr;
+  uint8_t idx = 0;
   uint8_t response[1024];
   size_t recv_len;
-  
-  memset(&local_addr, 0, sizeof(local_addr));
-  local_addr.sin_family = AF_INET;              
-  local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-  if (*pub_port < 1001)
-    local_addr.sin_port = htons(DEFAULT_PORT);
-  else
-    local_addr.sin_port = htons(*pub_port);
+  struct sockaddr_in local_addr = {0};
+  
+  local_addr.sin_family      = AF_INET;              
+  local_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  local_addr.sin_port        = *pub_port < 1001 ? htons(DEFAULT_PORT)
+                                                : htons(*pub_port);
   
   if (bind(*sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
     LOG_DEBUG("bind() failed.");
-
     return 1;
   }
-
+  
   LOG_INFO("Localhost socket-bound.");
-  
-  next_pass:
-  if (resolve_domain(STUN_SERVERS[i_srv].hostname, &server_addr)) {
-    LOG_DEBUG("resolve_domain() failed.");
-    
-    if (++i_srv == STUN_SERVER_COUNT) {
-      LOG_ERROR("Not enough stun host up.");
-      return 1;
-    }
-    
-    goto next_pass;
-  }
 
-  LOG_DEBUG("STUN server ip resolved.");
-
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_port   = htons(STUN_SERVERS[i_srv].port);
-  
-  if (stun_request(*sock, &server_addr)) {
-    LOG_DEBUG("stun_request() failed.");
-
+  if (stun_query(*sock, &idx, response, &recv_len))
     return 1;
-  }
-
-  LOG_DEBUG("BINDING request sent.");
-  
-  if (stun_receive(*sock, response, &recv_len)) {
-    LOG_DEBUG("stun_receive() failed.");
-
-    i_srv++;
-    goto next_pass;
-  }
-
-  LOG_DEBUG("BINDING response received.");
 
   if (extract_xor_mapped_address(response, recv_len, NULL, pub_port)) {
     LOG_ERROR("extract_xor_mapped_address() failed.");
-
     return 1;
   }
-  
+
   return 0;
 }

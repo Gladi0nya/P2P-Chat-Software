@@ -11,7 +11,7 @@
  */
 
 #include "logger.h"
-#include "generic_type.h"
+#include "utils/generic_type.h"
 
 #ifdef LOG_USE_DATETIME
   #include "string_acts.h"

@@ -1,0 +1,74 @@
+/**
+ * @file node.c
+ * @brief Node module
+ *
+ * @author Tom Schmitt
+ *
+ * Copyright (c) 2026 Tom Schmitt
+ * All rights reserved.
+ *
+ */
+
+#include "node.h"
+
+#include "dispatch/dispatcher.h"
+#include "net/hole_punch.h"
+#include "ui/chat_input.h"
+#include "protocol/message.h"
+#include "logger/logger.h"
+
+#include <poll.h>
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#define PUNCH_INTERVAL_MS 20
+
+void node_run(peer_context_t* ctx) {
+  struct pollfd fds[2];
+  fds[0].fd     = ctx->sock;
+  fds[0].events = POLLIN;
+  fds[1].fd     = STDIN_FILENO;
+  fds[1].events = POLLIN;
+
+  printf("[CHAT] ");
+  fflush(stdout);
+  
+  while (ctx->state != PEER_DISCONNECTED) {
+    int timeout_ms = (ctx->state == PEER_PUNCHING) ? PUNCH_INTERVAL_MS : -1;
+    int ret = poll(fds, 2, timeout_ms);
+
+    if (ret < 0) {
+      LOG_ERROR("poll() failed.");
+      break;
+    }
+
+    if (ret == 0 && ctx->state == PEER_PUNCHING) {
+      hole_punch_send_one(ctx, OP_PUNCH, ctx->packet_id++,
+			  (struct sockaddr*)&ctx->peer_addr);
+    }
+
+    // Net events
+    if (fds[0].revents & POLLIN) {
+      uint8_t buffer[1024];
+      struct sockaddr_in from_addr;
+      socklen_t addr_len = sizeof(from_addr);
+
+      ssize_t n = recvfrom(ctx->sock, buffer, sizeof(buffer) - 1, 0,
+			   (struct sockaddr*)&from_addr, &addr_len);
+
+      if (n > 0) {
+	buffer[n] = '\0';
+	opcode_t op = *(opcode_t*)buffer;
+	dispatch_message(ctx, op, buffer, (int)n, &from_addr, addr_len);
+      }
+    }
+
+    // Keyboard events
+    if (fds[1].revents & POLLIN) {
+      chat_input_handle(ctx);
+    }
+  }
+
+  LOG_INFO("Node loop exited.");
+}

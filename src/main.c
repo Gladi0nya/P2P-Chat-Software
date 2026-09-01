@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 
-extern int bootstrap_run(void);
+#include "core/bootstrap.h"
 
 /** ----------------------------------------------------------- *
   *  main                                                       *
@@ -27,8 +27,9 @@ extern int bootstrap_run(void);
 
 int main(int argc, char **argv)
 {
-  (void)argc; // Remove compiler warnings (might add program arguments later)
+  // Remove compiler warnings (might add program arguments later)
+  (void)argc; 
   (void)argv;
   
-  return bootstrap_run();
+  return bootstrap_start();
 }
