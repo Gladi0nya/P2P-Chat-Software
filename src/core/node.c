@@ -61,7 +61,7 @@ void node_run(peer_context_t* ctx) {
       if (n > 0) {
 	buffer[n] = '\0';
 	opcode_t op = *(opcode_t*)buffer;
-	dispatch_message(ctx, op, buffer, (int)n, &from_addr, addr_len);
+	dispatch_message(ctx, op, buffer + sizeof(opcode_t), (int)(n - sizeof(opcode_t)), &from_addr, addr_len);
       }
     }
 

@@ -18,7 +18,8 @@ void chat_input_handle(peer_context_t *ctx)
     return;
   }
 
-  char *msg = (char*)buffer + sizeof(opcode_t);
+  char *msg = (char*)(buffer + sizeof(opcode_t));
+  int msg_len = strlen(msg);
   msg[strcspn(msg, "\n")] = '\0';
 
   if (strncmp(msg, "quit", 4) == 0) {
@@ -35,7 +36,7 @@ void chat_input_handle(peer_context_t *ctx)
   }
 
   *(opcode_t*)buffer = OP_MSG;
-  if (!sendto(ctx->sock, buffer, strlen(msg) + sizeof(opcode_t), 0,
+  if (!sendto(ctx->sock, buffer, msg_len + sizeof(opcode_t), 0,
 	      (struct sockaddr*)&ctx->peer_addr, sizeof(ctx->peer_addr)))
     LOG_WARNING("Failed to send message.");
 

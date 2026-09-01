@@ -12,7 +12,7 @@ void dispatch_message(peer_context_t *ctx, opcode_t op, uint8_t *buffer, int n,
   switch (op) {
     case OP_PUNCH: handle_punch(ctx, buffer, n, from_addr, addr_len); break;
     case OP_PUNCH_ACK: handle_punch_ack(ctx, buffer, n, from_addr, addr_len); break;
-    case OP_MSG: handle_msg(ctx, buffer, n); break;
+    case OP_MSG: handle_msg(ctx, buffer); break;
     case OP_CLOSE: handle_close(ctx); break;
     default:
       LOG_WARNING("Unknown opcode: %d.", op);
