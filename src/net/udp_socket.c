@@ -5,11 +5,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <unistd.h>
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
-
+#endif
 
 int udp_socket_create(int* const restrict sock)
 {
@@ -28,8 +32,15 @@ int udp_socket_create(int* const restrict sock)
 int udp_socket_close(int* const restrict sock)
 {
   if (*sock >= 0) {
+    #ifdef _WIN32
+    if (shutdown(*sock, SD_BOTH))
+      return 1;
+    if (closesocket(*sock))
+      return 1;
+    #else
     if (close(*sock)) // Socket already closed or never assigned
       return 1;
+    #endif
   }
   
   *sock = -1;

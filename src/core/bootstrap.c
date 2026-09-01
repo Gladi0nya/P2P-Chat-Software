@@ -19,6 +19,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef _WIN32
+static WSADATA wsaData = {0};
+#endif
+
 /** ----------------------------------------------------------- *
   *  bootstrap_start                                            *
   *                                                             *
@@ -43,6 +47,10 @@ int bootstrap_start(char* lport, char* rip, char* rport)
 
   LOG_INFO("Bootstrap started.");
 
+  #ifdef _WIN32
+  
+  #endif
+  
   udp_socket_init_ctx(&ctx);
   
   if (stun_client_check(&ctx.my_pub_ip)) {
@@ -125,6 +133,10 @@ int bootstrap_start(char* lport, char* rip, char* rport)
 
  close_sock:
   udp_socket_close_ctx(&ctx);
+
+  #ifdef _WIN32
+  WSACleanup();
+  #endif
   
  exit:
   LOG_INFO("Bootstrap exit.");
