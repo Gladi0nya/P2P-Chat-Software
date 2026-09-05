@@ -64,7 +64,15 @@ void node_run(peer_context_t* ctx) {
       ssize_t n = recvfrom(ctx->sock, buffer, sizeof(buffer) - 1, 0,
 			   (struct sockaddr*)&from_addr, &addr_len);
 
-      if (from_addr.sin_addr.s_addr != ctx->peer_addr.sin_addr.s_addr)
+      if (n < 0) {
+	LOG_ERROR("recvfrom() error.");
+	continue;
+      }
+      
+      if (from_addr.sin_addr.s_addr != ctx->peer_addr.sin_addr.s_addr) {
+	LOG_WARNING("Unknown peer tried to contact us.");
+	continue;
+      }
       
       if (n >= (ssize_t)sizeof(opcode_t)) {
 	buffer[n] = '\0';
@@ -72,7 +80,9 @@ void node_run(peer_context_t* ctx) {
 	opcode_t op = *(opcode_t*)buffer;
 
 	dispatch_message(ctx, op, buffer + sizeof(opcode_t), (int)(n - sizeof(opcode_t)));
-      }
+
+      } else LOG_WARNING("Unknown message received.");
+      
     }
 
     // Keyboard events
