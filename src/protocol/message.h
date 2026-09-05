@@ -6,6 +6,8 @@
 enum OPCODE {
   OP_PUNCH,
   OP_PUNCH_ACK,
+  OP_PING,
+  OP_PONG,
   OP_MSG,
   OP_CLOSE
 };

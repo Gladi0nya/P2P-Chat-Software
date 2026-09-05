@@ -3,5 +3,5 @@
 
 #include "state/peer_state.h"
 
-void node_run(peer_context_t *ctx);
+int node_run(peer_context_t *ctx);
 #endif

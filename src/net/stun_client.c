@@ -79,10 +79,10 @@ typedef struct STUN_HOST stun_host_t;
 
 // Array of STUN servers
 static const stun_host_t STUN_SERVERS[] = {
-//  {"stun.miwifi.com", 3478},
-//  {"stun.sipthor.net", 3478},
-//  {"stun.freeswitch.org", 3478},
-//  {"stun.chat.bilibili.com", 3478},
+  {"stun.miwifi.com", 3478},
+  {"stun.sipthor.net", 3478},
+  {"stun.freeswitch.org", 3478},
+  {"stun.chat.bilibili.com", 3478},
   {"stun.l.google.com", 19302},
   {"stun.cloudflare.com", 3478},
   {"stun1.l.google.com", 3478},
@@ -382,7 +382,7 @@ int stun_client_check(uint32_t* const restrict pub_ip)
   *  @retval 1 Error.                                           *
   * ----------------------------------------------------------- **/
 
-int stun_client_bind_sock(int* const restrict sock, uint16_t* const restrict pub_port)
+int stun_client_bind_sock(const int sock, uint16_t* const restrict pub_port)
 {
   uint8_t idx = 0;
   uint8_t response[1024];
@@ -395,14 +395,14 @@ int stun_client_bind_sock(int* const restrict sock, uint16_t* const restrict pub
   local_addr.sin_port        = *pub_port < 1001 ? htons(DEFAULT_PORT)
                                                 : htons(*pub_port);
   
-  if (bind(*sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
+  if (bind(sock, (struct sockaddr *)&local_addr, sizeof(local_addr)) < 0) {
     LOG_DEBUG("bind() failed.");
     return 1;
   }
   
   LOG_INFO("Localhost socket-bound.");
 
-  if (stun_query(*sock, &idx, response, &recv_len))
+  if (stun_query(sock, &idx, response, &recv_len))
     return 1;
 
   if (extract_xor_mapped_address(response, recv_len, NULL, pub_port)) {

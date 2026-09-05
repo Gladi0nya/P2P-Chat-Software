@@ -14,6 +14,7 @@
 #endif
 
 enum PeerState {
+  PEER_UNDEFINED,
   PEER_ADDED,
   PEER_PUNCHING,
   PEER_ETABLISHED,
@@ -30,8 +31,15 @@ struct PeerContext {
   struct sockaddr_in peer_addr;
   peer_state_t state;
   uint64_t packet_id;
+  uint64_t random;
 };
 
 typedef struct PeerContext peer_context_t;
+
+int peer_context_create(peer_context_t *const restrict ctx);
+int peer_context_reset_random(peer_context_t *const restrict ctx);
+int peer_context_set_port(peer_context_t *const restrict ctx, char* const restrict lport);
+int peer_context_set_remote(peer_context_t *const restrict ctx, const char* const restrict rip, const char* const restrict rport);
+int peer_context_close(peer_context_t *const restrict ctx);
 
 #endif

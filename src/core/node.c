@@ -12,7 +12,10 @@
 #include "node.h"
 
 #include "dispatch/dispatcher.h"
+
 #include "net/hole_punch.h"
+#include "net/ping.h"
+
 #include "ui/chat_input.h"
 #include "protocol/message.h"
 #include "logger/logger.h"
@@ -23,10 +26,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define PUNCH_INTERVAL_MS       100
-#define HEARTBEAT_INTERVAL_MS 10000
+#define PUNCH_INTERVAL_MS   500
+#define  PING_INTERVAL_MS 10000
 
-void node_run(peer_context_t* ctx) {
+int node_run(peer_context_t* ctx) {
   struct pollfd fds[2];
 
   fds[0].fd     = ctx->sock;
@@ -40,14 +43,22 @@ void node_run(peer_context_t* ctx) {
   while (ctx->state != PEER_DISCONNECTED) {
     int timeout_ms, ret;
 
-    timeout_ms = (ctx->state == PEER_PUNCHING) ? PUNCH_INTERVAL_MS : -1; 
-    
+    if (ctx->state == PEER_PUNCHING)     timeout_ms = PUNCH_INTERVAL_MS; 
+    else if (ctx->state == PEER_ETABLISHED) timeout_ms = PING_INTERVAL_MS;
+    else timeout_ms = -1;
+      
     ret = poll(fds, 2, timeout_ms);
 
     if (ret < 0) {
       LOG_ERROR("poll() failed.");
       break;
     }
+
+    if (ret == 0 && ctx->state == PEER_PUNCHING)
+      hole_punch_send_one(ctx);
+
+    if (ret == 0 && ctx->state == PEER_ETABLISHED)
+      send_ping(ctx);
     
     // Net events
     if (fds[0].revents & POLLIN) {
@@ -59,25 +70,21 @@ void node_run(peer_context_t* ctx) {
       ssize_t n = recvfrom(ctx->sock, buffer, sizeof(buffer) - 1, 0,
 			   (struct sockaddr*)&from_addr, &addr_len);
 
-      if (n < 0) {
+      if (n < 0)
 	LOG_ERROR("recvfrom() error.");
-	continue;
-      }
       
-      if (from_addr.sin_addr.s_addr != ctx->peer_addr.sin_addr.s_addr) {
-	LOG_WARNING("Unknown peer tried to contact us.");
-	continue;
-      }
-      
-      if (n >= (ssize_t)sizeof(opcode_t)) {
+      else if (n >= (ssize_t)sizeof(opcode_t)) {
+
 	buffer[n] = '\0';
 
 	opcode_t op = *(opcode_t*)buffer;
 
 	dispatch_message(ctx, op, buffer + sizeof(opcode_t), (int)(n - sizeof(opcode_t)));
 
-      } else LOG_WARNING("Unknown message received.");
-      
+      } else
+	LOG_WARNING("Unknown message received.");
+
+      continue;
     }
 
     // Keyboard events
@@ -87,4 +94,6 @@ void node_run(peer_context_t* ctx) {
   }
 
   LOG_INFO("Node loop exited.");
+
+  return 0;
 }

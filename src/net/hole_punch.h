@@ -16,5 +16,6 @@
 #include <sys/socket.h>
 #endif
 
-int hole_punch_send_one(peer_context_t *ctx, opcode_t opcode);
+int hole_punch_send_one(peer_context_t *ctx);
+int hole_punch_send_ack(peer_context_t *ctx, uint64_t id);
 #endif

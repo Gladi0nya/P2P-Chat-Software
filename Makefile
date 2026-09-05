@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-c -Wall -Wextra -Wrestrict -pedantic -std=c2x -march=native -Isrc/ 
 LDFLAGS=
-OBJ=build/main.o build/node.o build/bootstrap.o build/dispatcher.o build/handler_punch.o build/handler_data.o build/handler_close.o build/udp_socket.o build/hole_punch.o build/addr.o build/stun_client.o build/state.o build/ui.o build/logger.o build/random.o
+OBJ=build/main.o build/node.o build/bootstrap.o build/dispatcher.o build/handler_punch.o build/handler_ping.o build/handler_data.o build/handler_close.o build/udp_socket.o build/hole_punch.o build/ping.o build/addr.o build/stun_client.o build/peer_registry.o build/peer_state.o build/ui.o build/logger.o build/random.o
 EXEC=build/client
 
 .PHONY: all clean run mkdir
@@ -35,11 +35,17 @@ build/addr.o: src/net/addr.c
 build/hole_punch.o: src/net/hole_punch.c 
 	$(CC) $(CFLAGS) src/net/hole_punch.c -o build/hole_punch.o
 
+build/ping.o: src/net/ping.c 
+	$(CC) $(CFLAGS) src/net/ping.c -o build/ping.o
+
 build/udp_socket.o: src/net/udp_socket.c
 	$(CC) $(CFLAGS) src/net/udp_socket.c -o build/udp_socket.o
 
-build/state.o: src/state/peer_registry.c
-	$(CC) $(CFLAGS) src/state/peer_registry.c -o build/state.o
+build/peer_registry.o: src/state/peer_registry.c
+	$(CC) $(CFLAGS) src/state/peer_registry.c -o build/peer_registry.o
+
+build/peer_state.o: src/state/peer_state.c
+	$(CC) $(CFLAGS) src/state/peer_state.c -o build/peer_state.o
 
 build/ui.o: src/ui/chat_input.c
 	$(CC) $(CFLAGS) src/ui/chat_input.c -o build/ui.o
@@ -49,6 +55,9 @@ build/dispatcher.o: src/dispatch/dispatcher.c
 
 build/handler_punch.o: src/dispatch/handlers/handler_punch.c 
 	$(CC) $(CFLAGS) src/dispatch/handlers/handler_punch.c -o build/handler_punch.o
+
+build/handler_ping.o: src/dispatch/handlers/handler_ping.c 
+	$(CC) $(CFLAGS) src/dispatch/handlers/handler_ping.c -o build/handler_ping.o
 
 build/handler_data.o: src/dispatch/handlers/handler_data.c 
 	$(CC) $(CFLAGS) src/dispatch/handlers/handler_data.c -o build/handler_data.o

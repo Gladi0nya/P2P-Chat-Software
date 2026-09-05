@@ -38,8 +38,8 @@ static WSADATA wsaData = {0};
 int bootstrap_start(char* lport, char* rip, char* rport)
 {
   int ret = 1;
-  peer_context_t ctx;
   char peer_ip[16], peer_port[9], my_port[9];
+  peer_context_t ctx;
   
   if (log_init()) {
     fprintf(stderr, "Failed to initialize logger.\n");
@@ -48,37 +48,25 @@ int bootstrap_start(char* lport, char* rip, char* rport)
 
   LOG_INFO("Bootstrap started.");
 
-  #ifdef _WIN32
-  
-  #endif
-  
-  udp_socket_init_ctx(&ctx);
-
-  if (stun_client_check(&ctx.my_pub_ip)) {
-    LOG_DEBUG("stun_client_check() failed.");
+  if (peer_context_create(&ctx))
     goto exit;
-  }
 
   if (lport == NULL) {
     lport = my_port;
   
     printf("What port would you like to listen on (>= 9999): ");
     fflush(stdout);
-
+    
     if (fgets(my_port, sizeof(my_port), stdin) == NULL) {
       LOG_ERROR("Input mismatch.");
       goto exit;
     }
-
-    my_port[strcspn(my_port, "\n")] = '\0';
-
+    
+    my_port[strcspn(my_port, "\n")] = '\0'; 
   }
 
-  if (udp_socket_open_port_ctx(&ctx, lport)) {
-    LOG_ERROR("udp_socket_open_port_ctx() failed.");
+  if (peer_context_set_port(&ctx, lport))
     goto exit;
-  }
-  
 
   LOG_INFO("Your Public Address is: %u.%u.%u.%u:%u",
 	   (ctx.my_pub_ip      ) & 0xFF,
@@ -93,7 +81,7 @@ int bootstrap_start(char* lport, char* rip, char* rport)
     
     printf("Enter Peer IP: ");
     fflush(stdout);
-    if (fgets(peer_ip, sizeof(peer_ip), stdin) == NULL) {
+     if (fgets(peer_ip, sizeof(peer_ip), stdin) == NULL) {
       LOG_ERROR("Input mismatch.");
       goto close_sock;
     }
@@ -114,22 +102,18 @@ int bootstrap_start(char* lport, char* rip, char* rport)
     peer_port[strcspn(peer_port, "\n")] = '\0';
   }
   
-  if (udp_socket_set_peer_ctx(&ctx, rip, rport)) {
-    LOG_ERROR("udp_socket_set_peer() failed.");
+  if (peer_context_set_remote(&ctx, rip, rport))
     goto close_sock;
-  }
+  
 
-  if (peer_registry_add(&ctx)) {
-    LOG_ERROR("peer_registry_add() failed.");
+  if (peer_registry_add(&ctx))
     goto close_sock;
-  }
+  
 
-  node_run(&ctx); 
-
-  ret = 0;
+  ret = node_run(&ctx);
 
  close_sock:
-  udp_socket_close_ctx(&ctx);
+  peer_context_close(&ctx);
 
   #ifdef _WIN32
   WSACleanup();

@@ -15,4 +15,7 @@
 #endif
 
 int net_addr_resolve(const char* hostname, struct sockaddr_in *out_addr);
+int net_addr_parse_addr(const char *const restrict ip,
+			const char *const restrict port,
+		        struct sockaddr_in *const restrict out_addr);
 #endif

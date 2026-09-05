@@ -15,5 +15,5 @@
 #include <stdint.h>
 
 int stun_client_check(uint32_t *pub_ip);
-int stun_client_bind_sock(int *sock, uint16_t *pub_port);
+int stun_client_bind_sock(int sock, uint16_t *pub_port);
 #endif
