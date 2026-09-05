@@ -1,8 +1,13 @@
+#define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
+
 #include "net/ping.h"
 
 #include "handler_ping.h"
 
 #include "logger/logger.h"
+
+#include <time.h>
 
 void handle_ping(peer_context_t *ctx, uint8_t *buffer, ssize_t n)
 {
@@ -25,5 +30,11 @@ void handle_pong(peer_context_t *ctx)
 {
   ctx->flags &= 0xFE;
 
-  LOG_DEBUG("Pong received.");
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+
+  uint64_t ms = (uint64_t)ts.tv_sec * 1000ULL + ts.tv_nsec / 1000000ULL;
+  ctx->ping_delay |= (ms & 0xFFFFFFFF);
+  
+  LOG_DEBUG("Pong received. %llu ms.", (ctx->ping_delay & 0xFFFFFFFF) - ((ctx->ping_delay >> 32) & 0xFFFFFFFF));
 }

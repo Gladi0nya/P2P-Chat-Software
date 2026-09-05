@@ -1,3 +1,6 @@
+#define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
+
 #include "ping.h"
 
 #include "protocol/message.h"
@@ -5,6 +8,8 @@
 #include "state/peer_state.h"
 
 #include "logger/logger.h"
+
+#include <time.h>
 
 struct PACKET_PING {
   opcode_t op;
@@ -19,6 +24,13 @@ int send_ping(peer_context_t *const restrict ctx)
     .op = OP_PING,
     .id = ctx->packet_id++
   };
+
+
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+
+  uint64_t ms = (uint64_t)ts.tv_sec * 1000ULL + ts.tv_nsec / 1000000ULL;
+  ctx->ping_delay = (ms & 0xFFFFFFFF) << 32; 
   
   ssize_t sent = sendto(ctx->sock, &packet, sizeof(packet), 0, (struct sockaddr*)&ctx->peer_addr, sizeof(ctx->peer_addr));
 

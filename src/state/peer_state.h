@@ -32,6 +32,7 @@ struct PeerContext {
   peer_state_t state;
   uint64_t packet_id;
   uint64_t random;
+  uint64_t ping_delay; // high 32 (ping time), low 32 (pong time)
 };
 
 typedef struct PeerContext peer_context_t;
