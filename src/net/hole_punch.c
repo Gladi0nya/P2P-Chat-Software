@@ -7,7 +7,7 @@
 struct PUNCH_PACKET {
   opcode_t op;
   uint64_t id;
-};
+} __attribute__((packed));
 
 typedef struct PUNCH_PACKET punch_packet_t;
 
@@ -15,7 +15,7 @@ struct PUNCH_PACKET_ACK {
   opcode_t op;
   uint64_t id;
   uint64_t random;
-};
+} __attribute__((packed));
 
 typedef struct PUNCH_PACKET_ACK punch_packet_ack_t;
 

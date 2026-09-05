@@ -9,7 +9,7 @@
 struct PACKET_PING {
   opcode_t op;
   uint64_t id;
-};
+} __attribute__((packed));
 
 typedef struct PACKET_PING packet_ping_t;
 
