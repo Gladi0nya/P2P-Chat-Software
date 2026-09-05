@@ -347,8 +347,19 @@ int stun_client_check(uint32_t* const restrict pub_ip)
     } else break;
   }
 
-  if (memcmp(&pub[0], &pub[1], sizeof(addr_t))) {
+  if (memcmp(&pub[0].ip, &pub[1].ip, 4) && memcmp(&pub[0].port, &pub[1].port, 2)) {
     udp_socket_close(&sock);
+    LOG_DEBUG("%u.%u.%u.%u:%u | %u.%u.%u.%u:%u",
+		 pub[0].ip       & 0xFF,
+		(pub[0].ip >> 8) & 0xFF,
+		(pub[0].ip >> 16) & 0xFF,
+		(pub[0].ip >> 24) & 0xFF,
+		 pub[0].port,
+		 pub[1].ip       & 0xFF,
+		(pub[1].ip >> 8) & 0xFF,
+		(pub[1].ip >> 16) & 0xFF,
+		(pub[1].ip >> 24) & 0xFF,
+		pub[1].port);
     return 1;
   }
   
