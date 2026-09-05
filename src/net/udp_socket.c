@@ -89,6 +89,7 @@ int udp_socket_set_peer_ctx(peer_context_t *const restrict ctx,
 
   if (inet_pton(AF_INET, peer_ip, &ctx->peer_addr.sin_addr.s_addr) != 1) {
     LOG_ERROR("Failed to parse IP.");
+    LOG_DEBUG("IP: %s", peer_ip);
     return 1;
   }
 
