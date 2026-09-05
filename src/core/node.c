@@ -48,8 +48,11 @@ void node_run(peer_context_t* ctx) {
       break;
     }
 
-    if (ret == 0 && ctx->state == PEER_PUNCHING)
+    if (ret == 0 && ctx->state == PEER_PUNCHING) {
       hole_punch_send_one(ctx, OP_PUNCH);
+      LOG_DEBUG("hole punch sent.");
+    }
+
     
     // Net events
     if (fds[0].revents & POLLIN) {
