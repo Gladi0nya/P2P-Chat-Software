@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #define PUNCH_INTERVAL_MS       500
 #define HEARTBEAT_INTERVAL_MS 10000
@@ -35,6 +36,13 @@ void node_run(peer_context_t* ctx) {
 
   printf("Awaiting peer...");
   fflush(stdout);
+
+  int flags = fcntl(ctx->sock, F_GETFL, 0);
+  if (flags & O_NONBLOCK) {
+    LOG_DEBUG("Socket is NON-BLOCKING");
+  } else {
+    LOG_DEBUG("Socket is BLOCKING");
+  }
   
   while (ctx->state != PEER_DISCONNECTED) {
     int timeout_ms, ret;
