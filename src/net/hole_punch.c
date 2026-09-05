@@ -2,7 +2,7 @@
 
 #include "logger/logger.h"
 
-struct PUNCH_PACKET {
+struct __attribute__((packed)) PUNCH_PACKET {
   opcode_t op;
   uint64_t id;
 };
