@@ -2,15 +2,21 @@
 
 #include "logger/logger.h"
 
+struct PUNCH_PACKET {
+  opcode_t op;
+  uint64_t id;
+};
+
+typedef struct PUNCH_PACKET punch_packet_t;
+
 int hole_punch_send_one(peer_context_t *ctx, opcode_t opcode)
 {
-
-  uint8_t packet[sizeof(opcode_t) + sizeof(uint64_t)];
-
-  *(opcode_t*)packet = opcode;
-  *(uint64_t*)(packet + sizeof(opcode)) = ctx->packet_id;
-
-  ssize_t sent = sendto(ctx->sock, packet, sizeof(packet), 0, (struct sockaddr*)&ctx->peer_addr, sizeof(ctx->peer_addr));
+  punch_packet_t packet = {
+    .op = opcode,
+    .id = ctx->packet_id++
+  };
+  
+  ssize_t sent = sendto(ctx->sock, &packet, sizeof(packet), 0, (struct sockaddr*)&ctx->peer_addr, sizeof(ctx->peer_addr));
 
   if (sent < 0) {
     LOG_ERROR("sendto() failed.");

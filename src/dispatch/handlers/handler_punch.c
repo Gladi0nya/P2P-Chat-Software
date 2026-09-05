@@ -1,4 +1,6 @@
 #include "handler_punch.h"
+
+#include "net/hole_punch.h"
 #include "protocol/message.h"
 #include "logger/logger.h"
 
@@ -12,12 +14,8 @@
 #include <sys/socket.h>
 #endif
 
-void handle_punch(peer_context_t *ctx, const uint8_t *buffer, int n,
-		  const struct sockaddr_in *from_addr, socklen_t addr_len)
+void handle_punch(peer_context_t *ctx, const uint8_t *buffer, int n)
 {
-  uint8_t packet[sizeof(opcode_t) + sizeof(uint64_t)];
-  uint64_t id = *(const uint64_t*)buffer;
-
   if (ctx->state == PEER_ETABLISHED) {
     LOG_DEBUG("Received punch, but peer connection already etablished");
     return;
@@ -27,30 +25,16 @@ void handle_punch(peer_context_t *ctx, const uint8_t *buffer, int n,
     LOG_DEBUG("Received invalid punch request.");
     return;
   }
-  
-  LOG_DEBUG("punch ID: %llu", (unsigned long long)id);
 
-  *(opcode_t*)packet = OP_PUNCH_ACK;
-  *(uint64_t*)(packet + sizeof(opcode_t)) = id;
-
-  if (!sendto(ctx->sock, packet, sizeof(packet), 0,
-	      (const struct sockaddr*)from_addr, addr_len))
-    LOG_DEBUG("Failed to send punch ack request to %u.%u.%u.%u:%u.",
-	      (ctx->peer_addr.sin_addr.s_addr      ) & 0xFF,
-	      (ctx->peer_addr.sin_addr.s_addr >>  8) & 0xFF,
-	      (ctx->peer_addr.sin_addr.s_addr >> 16) & 0xFF,
-	      (ctx->peer_addr.sin_addr.s_addr >> 24) & 0xFF,	      
-	      ctx->peer_addr.sin_port);
+  ctx->packet_id = *(uint64_t*)buffer;
   
+  LOG_DEBUG("punch ID: %llu", ctx->packet_id);
+  
+  hole_punch_send_one(ctx, OP_PUNCH_ACK);
 }
 
-void handle_punch_ack(peer_context_t *ctx, const uint8_t *buffer, int n,
-		      const struct sockaddr_in *from_addr, socklen_t addr_len)
+void handle_punch_ack(peer_context_t *ctx, const uint8_t *buffer, int n)
 {
-  uint8_t packet[sizeof(opcode_t) + sizeof(uint64_t)];
-  uint64_t id = *(const uint64_t*)buffer;
-  
-
   if (ctx->state == PEER_ETABLISHED) {
     LOG_DEBUG("Received punch ack, but peer connection already etablished");
     return;
@@ -63,25 +47,15 @@ void handle_punch_ack(peer_context_t *ctx, const uint8_t *buffer, int n,
 
   ctx->state = PEER_ETABLISHED;
   
-  
   LOG_INFO("Connected to %u.%u.%u.%u",
 	   ((ctx->peer_addr.sin_addr.s_addr      ) & 0xFF),
 	   ((ctx->peer_addr.sin_addr.s_addr >>  8) & 0xFF),
 	   ((ctx->peer_addr.sin_addr.s_addr >> 16) & 0xFF),
 	   ((ctx->peer_addr.sin_addr.s_addr >> 24) & 0xFF));
+
+  ctx->packet_id = *(uint64_t*)buffer;
   
-  LOG_DEBUG("punch ack ID: %llu", (unsigned long long)id);
-
-
-  *(opcode_t*)packet = OP_PUNCH_ACK;
-  *(uint64_t*)(packet + sizeof(opcode_t)) = id;
-
-  if (!sendto(ctx->sock, packet, sizeof(packet), 0,
-	      (const struct sockaddr*)from_addr, addr_len))
-    LOG_DEBUG("Failed to send punch request to %u.%u.%u.%u:%u.",
-	      (ctx->peer_addr.sin_addr.s_addr >> 24) & 0xFF,
-	      (ctx->peer_addr.sin_addr.s_addr >> 16) & 0xFF,
-	      (ctx->peer_addr.sin_addr.s_addr >>  8) & 0xFF,
-	      (ctx->peer_addr.sin_addr.s_addr      ) & 0xFF,
-	      ctx->peer_addr.sin_port);
+  LOG_DEBUG("punch ack ID: %llu", ctx->packet_id);
+  
+  hole_punch_send_one(ctx, OP_PUNCH_ACK);
 }
