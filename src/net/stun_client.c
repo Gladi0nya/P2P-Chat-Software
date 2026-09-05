@@ -382,12 +382,10 @@ int stun_client_check(uint32_t* const restrict pub_ip)
   *  @retval 1 Error.                                           *
   * ----------------------------------------------------------- **/
 
-#include <stdalign.h>
-
 int stun_client_bind_sock(int* const restrict sock, uint16_t* const restrict pub_port)
 {
   uint8_t idx = 0;
-  alignas(16) uint8_t response[1024];
+  uint8_t response[1024];
   size_t recv_len;
 
   struct sockaddr_in local_addr = {0};

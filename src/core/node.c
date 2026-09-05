@@ -23,7 +23,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define PUNCH_INTERVAL_MS       500
+#define PUNCH_INTERVAL_MS       100
 #define HEARTBEAT_INTERVAL_MS 10000
 
 void node_run(peer_context_t* ctx) {
