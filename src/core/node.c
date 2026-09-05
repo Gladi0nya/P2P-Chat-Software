@@ -36,13 +36,6 @@ void node_run(peer_context_t* ctx) {
 
   printf("Awaiting peer...");
   fflush(stdout);
-
-  int flags = fcntl(ctx->sock, F_GETFL, 0);
-  if (flags & O_NONBLOCK) {
-    LOG_DEBUG("Socket is NON-BLOCKING");
-  } else {
-    LOG_DEBUG("Socket is BLOCKING");
-  }
   
   while (ctx->state != PEER_DISCONNECTED) {
     int timeout_ms, ret;
@@ -54,6 +47,28 @@ void node_run(peer_context_t* ctx) {
     if (ret < 0) {
       LOG_ERROR("poll() failed.");
       break;
+    }
+
+    LOG_DEBUG("fds[0].revents = 0x%04X (POLLIN=0x%04X)", 
+	      fds[0].revents, POLLIN);
+    LOG_DEBUG("fds[1].revents = 0x%04X", fds[1].revents);
+    
+    if (fds[0].revents & POLLERR) {
+      LOG_ERROR("Socket has POLLERR (error condition)");
+      
+      // Récupérer l'erreur
+      int sock_err;
+      socklen_t optlen = sizeof(sock_err);
+      getsockopt(fds[0].fd, SOL_SOCKET, SO_ERROR, &sock_err, &optlen);
+      LOG_ERROR("Socket error: %s", strerror(sock_err));
+    }
+    
+    if (fds[0].revents & POLLHUP) {
+      LOG_ERROR("Socket has POLLHUP (hang up)");
+    }
+    
+    if (fds[0].revents & POLLNVAL) {
+      LOG_ERROR("Socket has POLLNVAL (invalid fd)");
     }
 
     if (ret == 0 && ctx->state == PEER_PUNCHING) {
