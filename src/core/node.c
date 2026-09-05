@@ -57,7 +57,7 @@ int node_run(peer_context_t* ctx) {
     if (ret == 0 && ctx->state == PEER_PUNCHING)
       hole_punch_send_one(ctx);
 
-    if (ret == 0 && ctx->state == PEER_ETABLISHED && (ctx->flag & 0x1))
+    if (ret == 0 && ctx->state == PEER_ETABLISHED && (ctx->flags & 0x1))
       send_ping(ctx);
     
     // Net events
