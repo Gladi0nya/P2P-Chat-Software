@@ -49,7 +49,7 @@ void handle_punch_ack(peer_context_t *ctx, const uint8_t *buffer, int n)
 {
   uint64_t peer_packet_id, peer_random;
   
-  if (ctx->state != PEER_ETABLISHED) {
+  if (ctx->state == PEER_ETABLISHED) {
     LOG_DEBUG("Received punch ack, but peer connection already etablished");
     return;
   }
