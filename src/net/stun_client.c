@@ -280,6 +280,8 @@ static int stun_query(int sock, uint8_t *used_idx, uint8_t *response, size_t *re
     if (stun_client_receive(sock, response, recv_len) == 0) {
       *used_idx = i;
       return 0;
+    } else {
+      LOG_DEBUG("stun_client_receive() failed for %s.", STUN_SERVERS[i].hostname);
     }
   }
 
@@ -342,8 +344,7 @@ int stun_client_check(uint32_t* const restrict pub_ip)
 		(pub[1].ip >> 16) & 0xFF,
 		(pub[1].ip >> 24) & 0xFF,
 		pub[1].port);
-    } else
-      break;
+    } else break;
   }
 
   if (memcmp(&pub[0], &pub[1], sizeof(addr_t))) {
