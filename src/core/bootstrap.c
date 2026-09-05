@@ -39,7 +39,7 @@ int bootstrap_start(char* lport, char* rip, char* rport)
 {
   int ret = 1;
   peer_context_t ctx;
-  char peer_ip[16]; char peer_port[9], char my_port[9];
+  char peer_ip[16], peer_port[9], my_port[9];
   
   if (log_init()) {
     fprintf(stderr, "Failed to initialize logger.\n");
