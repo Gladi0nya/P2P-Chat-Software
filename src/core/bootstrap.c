@@ -39,6 +39,7 @@ int bootstrap_start(char* lport, char* rip, char* rport)
 {
   int ret = 1;
   peer_context_t ctx;
+  char peer_ip[16]; char peer_port[9], char my_port[9];
   
   if (log_init()) {
     fprintf(stderr, "Failed to initialize logger.\n");
@@ -60,9 +61,7 @@ int bootstrap_start(char* lport, char* rip, char* rport)
   }
 
   if (lport == NULL) {
-    char my_port[9];
     lport = my_port;
-  
   
     printf("What port would you like to listen on (>= 9999): ");
     fflush(stdout);
@@ -91,7 +90,6 @@ int bootstrap_start(char* lport, char* rip, char* rport)
 
 
   if (rip == NULL) {
-    char peer_ip[16];
     rip = peer_ip;
     
     printf("Enter Peer IP: ");
@@ -105,7 +103,6 @@ int bootstrap_start(char* lport, char* rip, char* rport)
   }
 
   if (rport == NULL) {
-    char peer_port[9];
     rport = peer_port;
 
     printf("Enter Peer PORT: ");
