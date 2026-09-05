@@ -52,10 +52,11 @@ int bootstrap_start(char* lport, char* rip, char* rport)
   #endif
   
   udp_socket_init_ctx(&ctx);
-  
+
+ retry:
   if (stun_client_check(&ctx.my_pub_ip)) {
     LOG_DEBUG("stun_client_check() failed.");
-    goto exit;
+    goto retry;
   }
 
   if (lport == NULL) {

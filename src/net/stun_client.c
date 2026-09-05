@@ -20,15 +20,25 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+#else
 #include <arpa/inet.h>
 #include <sys/socket.h>
+
+#include <unistd.h>
+#endif
 #include <sys/time.h>
 
 #define DEFAULT_PORT  12345
 #define TIMEOUT_SEC       2
 #define PASS_COUNT        2
+#define MAX_RETRY_CHECK   3
 
 #define STUN_MAGIC_COOKIE       0x2112A442
 
@@ -282,7 +292,7 @@ int stun_client_check(uint32_t* const restrict pub_ip)
   int sock = -1;
   uint8_t response[1024];
   size_t recv_len;
-  addr_t pub[PASS_COUNT];
+  addr_t pub[PASS_COUNT] = {0};
   uint8_t idx = 0;
 
   struct sockaddr_in local_addr = {0};
@@ -302,24 +312,41 @@ int stun_client_check(uint32_t* const restrict pub_ip)
     return 1;
   }
 
-  for (uint8_t pass = 0; pass < PASS_COUNT; pass++) {
+  for (uint8_t retry = 0; retry < MAX_RETRY_CHECK; retry++) {
+    for (uint8_t pass = 0; pass < PASS_COUNT; pass++) {
 
-    if (stun_query(sock, &idx, response, &recv_len)) {
-      udp_socket_close(&sock);
-      return 1;
+      if (stun_query(sock, &idx, response, &recv_len)) {
+	udp_socket_close(&sock);
+	return 1;
+      }
+      
+      if (extract_xor_mapped_address(response, recv_len, &pub[pass].ip, &pub[pass].port)) {
+	LOG_DEBUG("Failed to parse XOR-MAPPED-ADDRESS.");
+	udp_socket_close(&sock);
+	return 1;
+      }
+      
+      idx++;
     }
-
-    if (extract_xor_mapped_address(response, recv_len, &pub[pass].ip, &pub[pass].port)) {
-      LOG_DEBUG("Failed to parse XOR-MAPPED-ADDRESS.");
-      udp_socket_close(&sock);
-      return 1;
-    }
-
-    idx++;
-  }
     
+    if (memcmp(&pub[0].ip, &pub[1].ip, 4) && memcmp(&pub[0].port, &pub[1].port, 2)) {
+      LOG_WARNING("Detected public IP change.");
+      LOG_DEBUG("%u.%u.%u.%u:%u | %u.%u.%u.%u:%u",
+		 pub[0].ip       & 0xFF,
+		(pub[0].ip >> 8) & 0xFF,
+		(pub[0].ip >> 16) & 0xFF,
+		(pub[0].ip >> 24) & 0xFF,
+		 pub[0].port,
+		 pub[1].ip       & 0xFF,
+		(pub[1].ip >> 8) & 0xFF,
+		(pub[1].ip >> 16) & 0xFF,
+		(pub[1].ip >> 24) & 0xFF,
+		pub[1].port);
+    } else
+      break;
+  }
+
   if (memcmp(&pub[0], &pub[1], sizeof(addr_t))) {
-    LOG_WARNING("Detected public IP change.");
     udp_socket_close(&sock);
     return 1;
   }

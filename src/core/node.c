@@ -22,7 +22,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define PUNCH_INTERVAL_MS 500
+#define PUNCH_INTERVAL_MS       500
+#define HEARTBEAT_INTERVAL_MS 10000
 
 void node_run(peer_context_t* ctx) {
   struct pollfd fds[2];
@@ -36,31 +37,35 @@ void node_run(peer_context_t* ctx) {
   fflush(stdout);
   
   while (ctx->state != PEER_DISCONNECTED) {
-    int timeout_ms = (ctx->state == PEER_PUNCHING) ? PUNCH_INTERVAL_MS : -1;
-    int ret = poll(fds, 2, timeout_ms);
+    int timeout_ms, ret;
+
+    timeout_ms = (ctx->state == PEER_PUNCHING) ? PUNCH_INTERVAL_MS : -1; 
+    
+    ret = poll(fds, 2, timeout_ms);
 
     if (ret < 0) {
       LOG_ERROR("poll() failed.");
       break;
     }
 
-    if (ret == 0 && ctx->state == PEER_PUNCHING) {
-      hole_punch_send_one(ctx, OP_PUNCH, ctx->packet_id++,
-			  (struct sockaddr*)&ctx->peer_addr);
-    }
-
+    if (ret == 0 && ctx->state == PEER_PUNCHING)
+      hole_punch_send_one(ctx, OP_PUNCH);
+    
     // Net events
     if (fds[0].revents & POLLIN) {
       uint8_t buffer[1024];
+
       struct sockaddr_in from_addr;
       socklen_t addr_len = sizeof(from_addr);
 
       ssize_t n = recvfrom(ctx->sock, buffer, sizeof(buffer) - 1, 0,
 			   (struct sockaddr*)&from_addr, &addr_len);
 
-      if (n > 0) {
+      if (n >= (ssize_t)sizeof(opcode_t)) {
 	buffer[n] = '\0';
+
 	opcode_t op = *(opcode_t*)buffer;
+
 	dispatch_message(ctx, op, buffer + sizeof(opcode_t), (int)(n - sizeof(opcode_t)), &from_addr, addr_len);
       }
     }

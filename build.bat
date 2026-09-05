@@ -1,5 +1,6 @@
 set INCLUDE_DIRS=/Isrc/ /I"C:\\dev\\MSVC\\VC\\Tools\\MSVC\\14.51.36231\\include" /I"C:\\dev\\MSVC\\Windows Kits\\10\\Include\\10.0.28000.0\\ucrt"
 set OBJECTS=build/main.o build/node.o build/bootstrap.o build/stun_client.o build/udp_socket.o build/addr.o build/hole_punch.o build/peer_registry.o build/random.o build/dispatcher.o build/handler_close.o build/handler_data.o build/handler_punch.o build/chat_input.o build/logger.o
+set LIBS=ws2_32.lib
 
 cl /c src/main.c %INCLUDE_DIRS% /Fobuild/main.o
 cl /c src/core/node.c %INCLUDE_DIRS% /Fobuild/node.o

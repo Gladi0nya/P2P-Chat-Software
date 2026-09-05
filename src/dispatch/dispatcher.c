@@ -15,6 +15,10 @@ void dispatch_message(peer_context_t *ctx, opcode_t op, uint8_t *buffer, int n,
     case OP_MSG: handle_msg(ctx, buffer); break;
     case OP_CLOSE: handle_close(ctx); break;
     default:
-      LOG_WARNING("Unknown opcode: %d.", op);
+      LOG_WARNING("Unknown opcode: %d, from: %u.%u.%u.%u", op,
+		  from_addr->sin_addr.s_addr & 0xFF,
+		  (from_addr->sin_addr.s_addr >> 8) & 0xFF,
+		  (from_addr->sin_addr.s_addr >> 16) & 0xFF,
+		  (from_addr->sin_addr.s_addr >> 24) & 0xFF);
   }
 }
