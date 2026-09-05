@@ -10,7 +10,6 @@ void handle_ping(peer_context_t *ctx, uint8_t *buffer, ssize_t n)
     LOG_ERROR("Invalid packet size.");
     return;
   }
-    
 
   uint64_t id = *(uint64_t*)buffer;
   
