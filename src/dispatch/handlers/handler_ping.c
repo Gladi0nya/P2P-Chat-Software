@@ -14,7 +14,7 @@ void handle_ping(peer_context_t *ctx, uint8_t *buffer, ssize_t n)
 
   uint64_t id = *(uint64_t*)buffer;
   
-  while (!send_pong(ctx, id))
+  while (send_pong(ctx, id))
     continue;
 
   ctx->flags |= 0x1; // My turn to send ping
