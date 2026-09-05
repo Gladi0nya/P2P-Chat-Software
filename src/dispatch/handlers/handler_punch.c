@@ -16,10 +16,6 @@
 #include <sys/socket.h>
 #endif
 
-#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-#include <endian.h>
-#endif
-
 void handle_punch(peer_context_t *ctx, const uint8_t *buffer, int n)
 {
   uint64_t peer_packet_id;
@@ -34,11 +30,7 @@ void handle_punch(peer_context_t *ctx, const uint8_t *buffer, int n)
     return;
   }
 
-  #if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-  peer_packet_id = ntohll(*(uint64_t*)buffer);
-  #else
   peer_packet_id = *(uint64_t*)buffer;
-  #endif
   
   LOG_DEBUG("punch ID: %llu", peer_packet_id);
   
@@ -58,14 +50,9 @@ void handle_punch_ack(peer_context_t *ctx, const uint8_t *buffer, int n)
     LOG_DEBUG("Received invalid punch request.");
     return;
   }
-
-  #if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
-  peer_packet_id = ntohll(*(uint64_t*)buffer);
-  peer_random    = ntohll(*(uint64_t*)(buffer + sizeof(uint64_t)));
-  #else
+  
   peer_packet_id = *(uint64_t*)buffer;
   peer_random    = *(uint64_t*)(buffer + sizeof(uint64_t));
-  #endif
   
   LOG_DEBUG("Received ACK ID: %llu", peer_packet_id);
   LOG_DEBUG("Received PEER RANDOM: %llu", peer_random);
