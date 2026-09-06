@@ -31,7 +31,8 @@
 
 #include <time.h>
 
-#define PUNCH_INTERVAL_MS      2000
+#define PUNCH_INTERVAL_MS       500
+#define PUNCH_SYM_INTERVAL_MS  2000 // Huge scan so higher delay
 #define  PING_INTERVAL_MS     10000
 
 void bruteforce_sym_nat(peer_context_t* const restrict ctx) // Takes approximately one second
@@ -61,8 +62,9 @@ int node_run(peer_context_t* const restrict ctx, const int is_peer_sym) {
   while (ctx->state != PEER_DISCONNECTED) {
     int timeout_ms, ret;
 
-    if (ctx->state == PEER_PUNCHING)     timeout_ms = PUNCH_INTERVAL_MS; 
-    else if (ctx->state == PEER_ETABLISHED) timeout_ms = PING_INTERVAL_MS;
+    if (ctx->state == PEER_PUNCHING)     {
+      timeout_ms = is_peer_sym ? PUNCH_SYM_INTERVAL_MS : PUNCH_INTERVAL_MS; 
+    } else if (ctx->state == PEER_ETABLISHED) timeout_ms = PING_INTERVAL_MS;
     else timeout_ms = -1;
       
     ret = poll(fds, 2, timeout_ms);
