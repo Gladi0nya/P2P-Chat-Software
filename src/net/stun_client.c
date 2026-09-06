@@ -289,7 +289,8 @@ static int stun_query(int sock, uint8_t *used_idx, uint8_t *response, size_t *re
   return 1;
 }
 
-int stun_client_check(uint32_t* const restrict pub_ip)
+
+int stun_client_check(uint32_t* const restrict pub_ip) // TODO: Improve port detection by 'sending requests to most hosts possible'
 {
   int sock = -1;
   uint8_t response[1024];

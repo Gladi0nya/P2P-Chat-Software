@@ -31,6 +31,10 @@
 
 #include <time.h>
 
+// WARNING: Some network can block your requests causing the bruteforce to take very long time before succeeding.
+//          The first time worked well for me, but repeating the test by resetting the connection just after bruteforcing once
+//          might let you wait a lot..
+
 #define PUNCH_INTERVAL_MS       500
 #define PUNCH_SYM_INTERVAL_MS  2000 // Huge scan so higher delay
 #define  PING_INTERVAL_MS     10000
