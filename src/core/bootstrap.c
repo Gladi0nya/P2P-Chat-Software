@@ -37,8 +37,8 @@ static WSADATA wsaData = {0};
 
 int bootstrap_start(char* lport, char* rip, char* rport)
 {
-  int ret = 1;
-  char peer_ip[16], peer_port[9], my_port[9];
+  int ret = 1, is_peer_sym = 0, net_state;
+  char peer_ip[16], peer_port[9], my_port[9], sym_input[3];
   peer_context_t ctx;
   
   if (log_init()) {
@@ -54,7 +54,7 @@ int bootstrap_start(char* lport, char* rip, char* rport)
   if (lport == NULL) {
     lport = my_port;
   
-    printf("What port would you like to listen on (>= 9999): ");
+    printf("Enter listening port (val >= 9999): ");
     fflush(stdout);
     
     if (fgets(my_port, sizeof(my_port), stdin) == NULL) {
@@ -65,23 +65,46 @@ int bootstrap_start(char* lport, char* rip, char* rport)
     my_port[strcspn(my_port, "\n")] = '\0'; 
   }
 
+  if ((net_state = peer_context_check_net_state(&ctx)) == 1)
+    goto exit;
+  
+  
   if (peer_context_set_port(&ctx, lport))
     goto exit;
 
-  LOG_INFO("Your Public Address is: %u.%u.%u.%u:%u",
+  if (net_state)
+    LOG_INFO("Your Public Address is: %u.%u.%u.%u, lowest_port: %u",
+	   (ctx.my_pub_ip      ) & 0xFF,
+	   (ctx.my_pub_ip >>  8) & 0xFF,
+	   (ctx.my_pub_ip >> 16) & 0xFF,
+	   (ctx.my_pub_ip >> 24) & 0xFF,
+	   (uint16_t)net_state);
+  else
+    LOG_INFO("Your Public Address is: %u.%u.%u.%u:%u",
 	   (ctx.my_pub_ip      ) & 0xFF,
 	   (ctx.my_pub_ip >>  8) & 0xFF,
 	   (ctx.my_pub_ip >> 16) & 0xFF,
 	   (ctx.my_pub_ip >> 24) & 0xFF,
 	   ctx.my_port);
 
+  printf("Is your peer symmetric? (Y/n) ");
+  fflush(stdout);
 
+  if (fgets(sym_input, sizeof(sym_input), stdin) == NULL) {
+    LOG_ERROR("Input mismatch.");
+    goto close_sock;
+  }
+
+  if (sym_input[0] == 'y' || sym_input[0] == 'Y')
+    is_peer_sym = 1;
+  
   if (rip == NULL) {
     rip = peer_ip;
     
     printf("Enter Peer IP: ");
     fflush(stdout);
-     if (fgets(peer_ip, sizeof(peer_ip), stdin) == NULL) {
+    
+    if (fgets(peer_ip, sizeof(peer_ip), stdin) == NULL) {
       LOG_ERROR("Input mismatch.");
       goto close_sock;
     }
@@ -92,7 +115,9 @@ int bootstrap_start(char* lport, char* rip, char* rport)
   if (rport == NULL) {
     rport = peer_port;
 
-    printf("Enter Peer PORT: ");
+    if (is_peer_sym) printf("Enter lowest Peer PORT: ");
+    else printf("Enter Peer PORT: ");
+    
     fflush(stdout);
     if (fgets(peer_port, sizeof(peer_port), stdin) == NULL) {
       LOG_ERROR("Input mismatch.");
@@ -110,7 +135,7 @@ int bootstrap_start(char* lport, char* rip, char* rport)
     goto close_sock;
   
 
-  ret = node_run(&ctx);
+  ret = node_run(&ctx, is_peer_sym);
 
  close_sock:
   peer_context_close(&ctx);

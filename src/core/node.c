@@ -29,14 +29,27 @@
 #define PUNCH_INTERVAL_MS   500
 #define  PING_INTERVAL_MS 10000
 
-int node_run(peer_context_t* ctx) {
+void bruteforce_sym_nat(peer_context_t* const restrict ctx)
+{
+  const uint16_t lowest_port = ntohs(ctx->peer_addr.sin_port);
+
+  for (uint16_t current_port = ctx->peer_addr.sin_port;
+       current_port >= lowest_port; current_port++) { // Wrap around on uint16_t (so it goes back to zero)
+    ctx->peer_addr.sin_port = htons(current_port);
+    hole_punch_send_one(ctx);
+  }
+
+  ctx->peer_addr.sin_port = htons(lowest_port);
+}
+
+int node_run(peer_context_t* const restrict ctx, const int is_peer_sym) {
   struct pollfd fds[2];
 
   fds[0].fd     = ctx->sock;
   fds[0].events = POLLIN;
   fds[1].fd     = STDIN_FILENO;
   fds[1].events = POLLIN;
-
+ 
   printf("Awaiting peer...");
   fflush(stdout);
   
@@ -54,8 +67,10 @@ int node_run(peer_context_t* ctx) {
       break;
     }
 
-    if (ret == 0 && ctx->state == PEER_PUNCHING)
-      hole_punch_send_one(ctx);
+    if (ret == 0 && ctx->state == PEER_PUNCHING) {
+     if (is_peer_sym) bruteforce_sym_nat(ctx);
+     else hole_punch_send_one(ctx);
+    }
 
     if (ret == 0 && ctx->state == PEER_ETABLISHED && (ctx->flags & 0x1))
       send_ping(ctx);
@@ -70,6 +85,11 @@ int node_run(peer_context_t* ctx) {
       ssize_t n = recvfrom(ctx->sock, buffer, sizeof(buffer) - 1, 0,
 			   (struct sockaddr*)&from_addr, &addr_len);
 
+      if (is_peer_sym && ctx->state == PEER_PUNCHING) {
+	ctx->peer_addr.sin_port = from_addr.sin_port;
+	LOG_DEBUG("Peer PORT found: %u.", ntohs(from_addr.sin_port));
+      }
+      
       if (n < 0)
 	LOG_ERROR("recvfrom() error.");
       
@@ -80,7 +100,6 @@ int node_run(peer_context_t* ctx) {
 	opcode_t op = *(opcode_t*)buffer;
 
 	dispatch_message(ctx, op, buffer + sizeof(opcode_t), (int)(n - sizeof(opcode_t)));
-
       } else
 	LOG_WARNING("Unknown message received.");
 

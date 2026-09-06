@@ -29,11 +29,13 @@ int peer_context_reset_random(peer_context_t *const restrict ctx)
   return (rnds64(&ctx->random));
 }
 
-int peer_context_set_port(peer_context_t *const restrict ctx, char* const restrict lport)
+int peer_context_check_net_state(peer_context_t *const restrict ctx)
 {
-  if (stun_client_check(&ctx->my_pub_ip))
-    return 1;
-  
+  return stun_client_check(&ctx->my_pub_ip);
+}
+
+int peer_context_set_port(peer_context_t *const restrict ctx, char* const restrict lport)
+{ 
   return udp_socket_open_port(ctx->sock, lport, &ctx->my_port);
 }
 

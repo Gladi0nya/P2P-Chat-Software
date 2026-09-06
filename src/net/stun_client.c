@@ -296,7 +296,8 @@ int stun_client_check(uint32_t* const restrict pub_ip)
   size_t recv_len;
   addr_t pub[PASS_COUNT] = {0};
   uint8_t idx = 0;
-
+  uint16_t lowest_port = 0xFFFF;
+  
   struct sockaddr_in local_addr = {0};
 
   local_addr.sin_family      = AF_INET;
@@ -332,8 +333,14 @@ int stun_client_check(uint32_t* const restrict pub_ip)
     }
     
     if (memcmp(&pub[0].ip, &pub[1].ip, 4) || memcmp(&pub[0].port, &pub[1].port, 2)) {
+      uint16_t cmp_lowest = pub[0].port < pub[1].port ?
+	                    pub[0].port : pub[1].port;
+
+      lowest_port = cmp_lowest < lowest_port ?
+	            cmp_lowest : lowest_port;
+      
       LOG_WARNING("Detected public IP change.");
-      LOG_DEBUG("%u.%u.%u.%u:%u | %u.%u.%u.%u:%u",
+      LOG_DEBUG("ADDR1: %u.%u.%u.%u:%u | ADDR2: %u.%u.%u.%u:%u | LOWEST_PORT: %u",
 		 pub[0].ip       & 0xFF,
 		(pub[0].ip >> 8) & 0xFF,
 		(pub[0].ip >> 16) & 0xFF,
@@ -343,12 +350,14 @@ int stun_client_check(uint32_t* const restrict pub_ip)
 		(pub[1].ip >> 8) & 0xFF,
 		(pub[1].ip >> 16) & 0xFF,
 		(pub[1].ip >> 24) & 0xFF,
-		pub[1].port);
+		pub[1].port,
+		lowest_port);
     } else break;
   }
 
   if (memcmp(&pub[0].ip, &pub[1].ip, 4) || memcmp(&pub[0].port, &pub[1].port, 2)) {
     udp_socket_close(&sock);
+    LOG_WARNING("Symmetric NAT detected. Please ensure peer is NAT-friendly, and enable bruteforce-mode.");
     LOG_DEBUG("%u.%u.%u.%u:%u | %u.%u.%u.%u:%u",
 		 pub[0].ip       & 0xFF,
 		(pub[0].ip >> 8) & 0xFF,
@@ -360,7 +369,7 @@ int stun_client_check(uint32_t* const restrict pub_ip)
 		(pub[1].ip >> 16) & 0xFF,
 		(pub[1].ip >> 24) & 0xFF,
 		pub[1].port);
-    return 1;
+    return (uint16_t)lowest_port;
   }
   
   *pub_ip = pub[0].ip;

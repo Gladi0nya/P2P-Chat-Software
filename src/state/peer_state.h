@@ -40,6 +40,7 @@ typedef struct PeerContext peer_context_t;
 int peer_context_create(peer_context_t *const restrict ctx);
 int peer_context_reset_random(peer_context_t *const restrict ctx);
 int peer_context_set_port(peer_context_t *const restrict ctx, char* const restrict lport);
+int peer_context_check_net_state(peer_context_t *const restrict ctx);
 int peer_context_set_remote(peer_context_t *const restrict ctx, const char* const restrict rip, const char* const restrict rport);
 int peer_context_close(peer_context_t *const restrict ctx);
 

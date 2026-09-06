@@ -35,7 +35,6 @@ int net_addr_parse_addr(const char *const restrict ip,
 			const char *const restrict port,
 		        struct sockaddr_in *const restrict out_addr)
 {
-
   if (inet_pton(AF_INET, ip, &out_addr->sin_addr.s_addr) != 1) {
     LOG_ERROR("Failed to parse IP.");
     LOG_DEBUG("IP: %s", ip);
