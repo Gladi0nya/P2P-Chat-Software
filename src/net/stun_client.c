@@ -355,6 +355,8 @@ int stun_client_check(uint32_t* const restrict pub_ip)
     } else break;
   }
 
+  *pub_ip = pub[0].ip;
+  
   if (memcmp(&pub[0].ip, &pub[1].ip, 4) || memcmp(&pub[0].port, &pub[1].port, 2)) {
     udp_socket_close(&sock);
     LOG_WARNING("Symmetric NAT detected. Please ensure peer is NAT-friendly, and enable bruteforce-mode.");
@@ -369,12 +371,11 @@ int stun_client_check(uint32_t* const restrict pub_ip)
 		(pub[1].ip >> 16) & 0xFF,
 		(pub[1].ip >> 24) & 0xFF,
 		pub[1].port);
+
     return (uint16_t)lowest_port;
   }
   
-  *pub_ip = pub[0].ip;
-  
-  LOG_INFO("Friendly P2P NAT detected.");
+  LOG_INFO("Asymmetric NAT detected.");
   udp_socket_close(&sock);
   return 0;
 }
@@ -409,7 +410,7 @@ int stun_client_bind_sock(const int sock, uint16_t* const restrict pub_port)
     return 1;
   }
   
-  LOG_INFO("Localhost socket-bound.");
+  LOG_DEBUG("Localhost socket-bound.");
 
   if (stun_query(sock, &idx, response, &recv_len))
     return 1;

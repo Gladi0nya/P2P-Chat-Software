@@ -9,6 +9,9 @@
  *
  */
 
+#define _POSIX_C_SOURCE 200809L
+#define _GNU_SOURCE
+
 #include "node.h"
 
 #include "dispatch/dispatcher.h"
@@ -26,15 +29,18 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define PUNCH_INTERVAL_MS   500
-#define  PING_INTERVAL_MS 10000
+#include <time.h>
 
-void bruteforce_sym_nat(peer_context_t* const restrict ctx)
-{
-  const uint16_t lowest_port = ntohs(ctx->peer_addr.sin_port);
+#define PUNCH_INTERVAL_MS      2000
+#define  PING_INTERVAL_MS     10000
 
-  for (uint16_t current_port = ctx->peer_addr.sin_port;
-       current_port >= lowest_port; current_port++) { // Wrap around on uint16_t (so it goes back to zero)
+void bruteforce_sym_nat(peer_context_t* const restrict ctx) // Takes approximately one second
+{  
+  uint16_t lowest_port = ntohs(ctx->peer_addr.sin_port);
+  
+  for (uint16_t current_port = lowest_port;
+       current_port >= lowest_port; current_port++) { 
+
     ctx->peer_addr.sin_port = htons(current_port);
     hole_punch_send_one(ctx);
   }
@@ -49,9 +55,8 @@ int node_run(peer_context_t* const restrict ctx, const int is_peer_sym) {
   fds[0].events = POLLIN;
   fds[1].fd     = STDIN_FILENO;
   fds[1].events = POLLIN;
- 
-  printf("Awaiting peer...");
-  fflush(stdout);
+  
+  LOG_INFO("Awaiting peer...");
   
   while (ctx->state != PEER_DISCONNECTED) {
     int timeout_ms, ret;
@@ -85,15 +90,15 @@ int node_run(peer_context_t* const restrict ctx, const int is_peer_sym) {
       ssize_t n = recvfrom(ctx->sock, buffer, sizeof(buffer) - 1, 0,
 			   (struct sockaddr*)&from_addr, &addr_len);
 
+      if (n < 0)
+	LOG_ERROR("recvfrom() error.");
+      
       if (is_peer_sym && ctx->state == PEER_PUNCHING) {
 	ctx->peer_addr.sin_port = from_addr.sin_port;
 	LOG_DEBUG("Peer PORT found: %u.", ntohs(from_addr.sin_port));
       }
       
-      if (n < 0)
-	LOG_ERROR("recvfrom() error.");
-      
-      else if (n >= (ssize_t)sizeof(opcode_t)) {
+      if (n >= (ssize_t)sizeof(opcode_t)) {
 
 	buffer[n] = '\0';
 

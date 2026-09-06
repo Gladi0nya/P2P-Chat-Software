@@ -54,7 +54,7 @@ int bootstrap_start(char* lport, char* rip, char* rport)
   if (lport == NULL) {
     lport = my_port;
   
-    printf("Enter listening port (val >= 9999): ");
+    printf("Enter listening port (val >= 1024): ");
     fflush(stdout);
     
     if (fgets(my_port, sizeof(my_port), stdin) == NULL) {
@@ -97,6 +97,11 @@ int bootstrap_start(char* lport, char* rip, char* rport)
 
   if (sym_input[0] == 'y' || sym_input[0] == 'Y')
     is_peer_sym = 1;
+
+  if (is_peer_sym && net_state) {
+    LOG_ERROR("Inter NAT-symmetric negotiation not yet implemented.");
+    goto close_sock;
+  }
   
   if (rip == NULL) {
     rip = peer_ip;
@@ -115,7 +120,7 @@ int bootstrap_start(char* lport, char* rip, char* rport)
   if (rport == NULL) {
     rport = peer_port;
 
-    if (is_peer_sym) printf("Enter lowest Peer PORT: ");
+    if (is_peer_sym) printf("Enter Lowest Peer PORT:"); // Defaulting Remote PORT (Symmetric needs bruteforce)
     else printf("Enter Peer PORT: ");
     
     fflush(stdout);

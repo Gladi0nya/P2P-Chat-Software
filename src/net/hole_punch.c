@@ -43,7 +43,7 @@ int hole_punch_send_ack(peer_context_t *ctx, uint64_t id)
     .id = id,
     .random = ctx->random
   };
-  
+
   ssize_t sent = sendto(ctx->sock, &packet, sizeof(packet), 0, (struct sockaddr*)&ctx->peer_addr, sizeof(ctx->peer_addr));
 
   if (sent < 0) {
